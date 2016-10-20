@@ -5,7 +5,7 @@ from kivy.uix.screenmanager import ScreenManager
 from kivy.logger import Logger
 from kivy.uix.settings import SettingsWithTabbedPanel
 
-class HexagonApp(App):
+class MutantPuddingApp(App):
     def build(self):
         Logger.info('App build FIRED')
         sm = ScreenManager()
@@ -16,6 +16,6 @@ class HexagonApp(App):
 
 if __name__ == '__main__':
     try:
-        HexagonApp().run()
+        MutantPuddingApp().run()
     except:
         print_exc()

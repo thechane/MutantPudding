@@ -1,3 +1,6 @@
+## - credit -     https://github.com/myevan/kivy-hexagonal-grids
+#                 http://www.redblobgames.com/grids/hexagons/
+
 from kivy.uix.floatlayout import FloatLayout
 from kivy.graphics import Color, Ellipse, Line, Mesh, Rectangle
 from kivy.clock import Clock
@@ -234,32 +237,37 @@ class HexagonRoot(FloatLayout):
         super(HexagonRoot, self).__init__(**kwargs)
         self.bind(pos=self.render_canvas, size=self.render_canvas)
         self.size_hint = (1, 1)
-        self.EDGE_LEN = kwargs.get('edgeLength',1)
-        self.EDGE_WIDTH = kwargs.get('edgeWidth',1)
-        self.ROWS =  kwargs.get('rows',10)
-        self.COLS = kwargs.get('cols',10)
-        self.CENTER_RADIUS = kwargs.get('centerRadius',4)
-        self.CORNER_RADIUS = kwargs.get('cornerRadius',4)
-        self.CENTER_COLOR = kwargs.get('centerColor',(0.5, 0.1, 0.1))
-        self.CORNER_COLOR = kwargs.get('cornerColor',(0.5, 0.1, 0.1))
-        self.EDGE_COLOR = kwargs.get('edgeColor',(0.3, 0.3, 0.3))
-        self.AXIS_COLOR = kwargs.get('axisColor',(0.3, 0.3, 0.3))
-        self.MESH_COLOR = kwargs.get('meshColor',(0.5, 0.5, 0.5))
+        self.EDGE_LEN = kwargs.get('edgeLength', 1)
+        self.EDGE_WIDTH = kwargs.get('edgeWidth', 1)
+        self.ROWS =  kwargs.get('rows', 10)
+        self.COLS = kwargs.get('cols', 10)
+        self.CENTER_RADIUS = kwargs.get('centerRadius', 4)
+        self.CORNER_RADIUS = kwargs.get('cornerRadius', 4)
+        self.CENTER_COLOR = kwargs.get('centerColor', (0.5, 0.1, 0.1))
+        self.CORNER_COLOR = kwargs.get('cornerColor', (0.5, 0.1, 0.1))
+        self.EDGE_COLOR = kwargs.get('edgeColor', (0.3, 0.3, 0.3))
+        self.AXIS_COLOR = kwargs.get('axisColor', (0.3, 0.3, 0.3))
+        self.MESH_COLOR = kwargs.get('meshColor', (0.5, 0.5, 0.5))
         self.coord_labels = [Label(text="", pos_hint={}, size_hint=(None, None)) for i in xrange(self.ROWS * self.COLS)]
         self.hexagon = KivyHexagon()
         self.hexagon.set_edge_len(self.EDGE_LEN)
         self.hexagon.set_dir(+1, -1)
         self.X_AXIS_LEN = self.hexagon.get_short_len() * self.COLS
         self.Y_AXIS_LEN = self.hexagon.get_long_step() * self.ROWS
+        self.centerish = (10,10)
 
     def on_size(self, screen, size):
-        self.EDGE_LEN = ( (size[0] / (self.COLS)) + (size[1] / (self.ROWS)) ) / 4
+        height = size[1] / self.ROWS
+        width = sqrt(3)/2 * height
+        self.EDGE_LEN = (height / 2) * 1.2
+        Logger.info('height = ' + str(height) + ', width = ' + str(width) + 'COLS = ' + str(self.COLS) + ', ROWS = ' + str(self.ROWS))
         self.hexagon.set_edge_len(self.EDGE_LEN)
         self.X_AXIS_LEN = self.hexagon.get_short_len() * self.COLS
         self.Y_AXIS_LEN = self.hexagon.get_long_step() * self.ROWS
+        self.centerish = (size[0] * 0.5, size[1] * 0.65)
 
     def render_canvas(self, *args):
-        origin_position = Position(*self.center)
+        origin_position = Position(*self.centerish)
         origin_position.x -= self.X_AXIS_LEN / 2
         origin_position.y += self.Y_AXIS_LEN / 2
 
