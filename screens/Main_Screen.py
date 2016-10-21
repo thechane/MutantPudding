@@ -1,6 +1,7 @@
 from kivy.uix.screenmanager import Screen
 from kivy.logger import Logger
 from Brains.Hexagon import HexagonRoot
+from Brains.Particle import Particle
 
 class Main_Screen(Screen):
     def __init__(self, **kwargs):                       ##Override Screen's constructor
@@ -12,6 +13,16 @@ class Main_Screen(Screen):
         rootFloat = self.ids['rootFloat']
         self.HexGrid = HexagonRoot()
         rootFloat.add_widget(self.HexGrid)
+
+        with Particle(size_hint_x = 0.1 , width = 5) as Pa:
+            def stopEffect(dt):
+                Pa.unshow(self.ids['gameOverFullScreen'])
+            self.HexGrid.add_widget(Pa)
+            Pa.show(id = 'royal',
+                    x = 300,
+                    y = 300,
+                    layout = self.HexGrid)
+            #Clock.schedule_once(stopEffect, 4)
 
     def make_odd_r(self):
         self.HexGrid.hexagon.set_odd_r()
