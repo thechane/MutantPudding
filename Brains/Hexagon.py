@@ -240,7 +240,7 @@ class HexagonRoot(FloatLayout):
         self.EDGE_LEN = kwargs.get('edgeLength', 1)
         self.EDGE_WIDTH = kwargs.get('edgeWidth', 1)
         self.ROWS =  kwargs.get('rows', 10)
-        self.COLS = kwargs.get('cols', 10)
+        self.COLS = kwargs.get('cols', self.ROWS)
         self.CENTER_RADIUS = kwargs.get('centerRadius', 4)
         self.CORNER_RADIUS = kwargs.get('cornerRadius', 4)
         self.CENTER_COLOR = kwargs.get('centerColor', (0.5, 0.1, 0.1))
@@ -259,12 +259,12 @@ class HexagonRoot(FloatLayout):
     def on_size(self, screen, size):
         height = size[1] / self.ROWS
         width = sqrt(3)/2 * height
-        self.EDGE_LEN = (height / 2) * 1.2
-        Logger.info('height = ' + str(height) + ', width = ' + str(width) + 'COLS = ' + str(self.COLS) + ', ROWS = ' + str(self.ROWS))
+        self.EDGE_LEN = (height / 2) * 1.18
+        Logger.info('size = ' + str(size) + ', height = ' + str(height) + ', width = ' + str(width) + 'COLS = ' + str(self.COLS) + ', ROWS = ' + str(self.ROWS))
         self.hexagon.set_edge_len(self.EDGE_LEN)
         self.X_AXIS_LEN = self.hexagon.get_short_len() * self.COLS
         self.Y_AXIS_LEN = self.hexagon.get_long_step() * self.ROWS
-        self.centerish = (size[0] * 0.5, size[1] * 0.65)
+        self.centerish = (size[0] * 0.6, size[1] * 0.65)
 
     def render_canvas(self, *args):
         origin_position = Position(*self.centerish)
