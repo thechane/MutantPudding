@@ -2,6 +2,7 @@ from kivy.uix.screenmanager import Screen
 from kivy.logger import Logger
 from Brains.Hexagon import HexagonRoot
 from Brains.Particle import Particle
+from kivyparticle import ParticleSystem
 
 class Main_Screen(Screen):
     def __init__(self, **kwargs):                       ##Override Screen's constructor
@@ -12,38 +13,40 @@ class Main_Screen(Screen):
         ROWS=12
         rootFloat = self.ids['rootFloat']
         self.HexGrid = HexagonRoot()
+        self.puddingDict = {}
         rootFloat.add_widget(self.HexGrid)
 
-        with Particle(size_hint_x = 0.1 , width = 5) as Pa:
-            def stopEffect(dt):
-                Pa.unshow(self.ids['gameOverFullScreen'])
-            self.HexGrid.add_widget(Pa)
-            Pa.show(id = 'royal',
-                    x = 300,
-                    y = 300,
-                    layout = self.HexGrid)
-            #Clock.schedule_once(stopEffect, 4)
+    def startPart(self):
+        #self.HexGrid.hexagon.set_odd_r()
+        #self.HexGrid.render_canvas()
+        hex = self.HexGrid.returnHexLab(2)
+        pa = Particle()
+        pa.show(effect = ParticleSystem('./effects/royal.pex'), coor = hex.center, layout = self.ids['rootFloat'])
+        self.part = pa
+        Logger.info(str(hex.text) + ' = ' + str(hex.center))
+        Logger.info(str(self.part.pSys.capacity))
 
-    def make_odd_r(self):
-        self.HexGrid.hexagon.set_odd_r()
-        self.HexGrid.render_canvas()
+    def changeHex(self):
+        #self.HexGrid.hexagon.set_odd_q()
+        #self.HexGrid.render_canvas()
+        #self.part.pSys.pause()
+        lab = self.HexGrid.returnHexLab(2)
+        lab.text = "hello"
+        self.HexGrid.colourHex(each_position = lab.each_position)
 
-    def make_odd_q(self):
-        self.HexGrid.hexagon.set_odd_q()
-        self.HexGrid.render_canvas()
+    def changePart(self):
+        #self.HexGrid.hexagon.set_even_r()
+        #self.HexGrid.render_canvas()
+        self.part.replace(effect = ParticleSystem('./effects/royal.pex'), layout = self.ids['rootFloat'])
 
-    def make_even_r(self):
-        self.HexGrid.hexagon.set_even_r()
-        self.HexGrid.render_canvas()
+    def allPart(self):
+        #self.HexGrid.hexagon.set_even_q()
+        #self.HexGrid.render_canvas()
+        for lab in self.HexGrid.returnHexLables():
+            pa = Particle()
+            pa.show(effect = ParticleSystem('./effects/royal.pex'), coor = lab.center, layout = self.ids['rootFloat'])
+            self.puddingDict[lab.text] = pa
+            Logger.info(str(lab.text) + ' = ' + str(lab.center))
 
-    def make_even_q(self):
-        self.HexGrid.hexagon.set_even_q()
-        self.HexGrid.render_canvas()
-
-    def make_pointy_topped(self):
-        KivyHexagon.set_hexagon_pointy_topped()
-        self.render_canvas()
-
-    def make_flat_topped(self):
-        KivyHexagon.set_hexagon_flat_topped()
-        self.render_canvas()
+    def removeHexChange(self):
+        self.HexGrid.test()

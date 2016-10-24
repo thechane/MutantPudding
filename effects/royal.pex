@@ -1,32 +1,32 @@
 <?xml version="1.0" ?>
   <particleEmitterConfig>
-  <texture name="royal.png"/>
+  <texture name="VFX-0-Circle.png"/>
   <sourcePosition x="300.00" y="300.00"/>
   <sourcePositionVariance x="30" y="30"/>
   <gravity x="0.7" y="1.43"/>
-  <emitterType value="0"/>
-  <maxParticles value="500"/>
+  <emitterType value="1"/>
+  <maxParticles value="50"/>
   <particleLifeSpan value="4"/>
   <particleLifespanVariance value="4"/>
-  <startParticleSize value="50"/>
-  <startParticleSizeVariance value="50"/>
-  <finishParticleSize value="30"/>
-  <FinishParticleSizeVariance value="10"/>
+  <startParticleSize value="5"/>
+  <startParticleSizeVariance value="2"/>
+  <finishParticleSize value="5"/>
+  <FinishParticleSizeVariance value="2"/>
   <angle value="359"/>
   <angleVariance value="190"/>
-  <rotationStart value="5786.87373082"/>
-  <rotationStartVariance value="6990.0851006"/>
-  <rotationEnd value="7333.85977767"/>
-  <rotationEndVariance value="7448.4513367"/>
-  <speed value="98"/>
+  <rotationStart value="1000"/>
+  <rotationStartVariance value="1000"/>
+  <rotationEnd value="5000"/>
+  <rotationEndVariance value="1000"/>
+  <speed value="50"/>
   <speedVariance value="211"/>
   <radialAcceleration value="0"/>
   <radialAccelVariance value="0"/>
   <tangentialAcceleration value="0"/>
   <tangentialAccelVariance value="0"/>
-  <maxRadius value="100"/>
+  <maxRadius value="20"/>
   <maxRadiusVariance value="0"/>
-  <minRadius value="0"/>
+  <minRadius value="1"/>
   <rotatePerSecond value="0"/>
   <rotatePerSecondVariance value="0"/>
   <startColor alpha="0.76" blue="0.58" green="0.39" red="0.32"/>

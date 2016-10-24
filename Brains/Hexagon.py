@@ -3,12 +3,15 @@
 
 from kivy.uix.floatlayout import FloatLayout
 from kivy.graphics import Color, Ellipse, Line, Mesh, Rectangle
+from kivy.graphics.instructions import InstructionGroup
 from kivy.clock import Clock
 from kivy.uix.label import Label
 from kivy.properties import ObjectProperty
 from kivy.logger import Logger
 
 from math import pi, cos, sin, sqrt
+from docutils.nodes import row
+from copy import copy
 
 class Position(object):
     def __init__(self, *args, **kwargs):
@@ -220,9 +223,12 @@ class KivyHexagon(Hexagon):
     def convert_mesh_vertices(self, vertices):
         return [e for e in self.gen_vertex_sequences(vertices)]
 
-    def make_mesh(self, center_position):
+    def make_mesh(self, center_position, group):
         corner_vertices = self.create_corner_vertices(center_position)
-        return Mesh(vertices=self.convert_mesh_vertices(corner_vertices), indices=xrange(len(corner_vertices)), mode='triangle_fan')
+        if group is None:
+            return Mesh(vertices=self.convert_mesh_vertices(corner_vertices), indices=xrange(len(corner_vertices)), mode='triangle_fan')
+        else:
+            group.add(Mesh(vertices=self.convert_mesh_vertices(corner_vertices), indices=xrange(len(corner_vertices)), mode='triangle_fan'))
 
     def make_outline(self, center_position, width=1):
         corner_positions = self.create_corner_positions(center_position)
@@ -255,6 +261,13 @@ class HexagonRoot(FloatLayout):
         self.X_AXIS_LEN = self.hexagon.get_short_len() * self.COLS
         self.Y_AXIS_LEN = self.hexagon.get_long_step() * self.ROWS
         self.centerish = (10,10)
+        self.gridInfo = {}
+
+    def returnHexLab(self, index):
+        return self.coord_labels[index]
+
+    def returnHexLables(self):
+        return self.coord_labels
 
     def on_size(self, screen, size):
         height = size[1] / self.ROWS
@@ -265,6 +278,16 @@ class HexagonRoot(FloatLayout):
         self.X_AXIS_LEN = self.hexagon.get_short_len() * self.COLS
         self.Y_AXIS_LEN = self.hexagon.get_long_step() * self.ROWS
         self.centerish = (size[0] * 0.6, size[1] * 0.65)
+
+    def colourHex(self, **kwargs):
+        self.group = InstructionGroup()
+        colour = kwargs.get('colour', (0, 0, 1, 0.2))
+        self.group.add(Color(colour))
+        self.hexagon.make_mesh(kwargs.get('each_position'), self.group)
+        self.canvas.add(self.group)
+
+    def test(self):
+        self.canvas.remove(self.group)
 
     def render_canvas(self, *args):
         origin_position = Position(*self.centerish)
@@ -278,21 +301,23 @@ class HexagonRoot(FloatLayout):
 
         with self.canvas.before:
             Color(*self.AXIS_COLOR)
-            Line(points=self.hexagon.convert_line_points([x_axis_position, origin_position, y_axis_position]), width=self.EDGE_WIDTH)
+            #Line(points=self.hexagon.convert_line_points([x_axis_position, origin_position, y_axis_position]), width=self.EDGE_WIDTH)
             #Rectangle(pos=(100, 100), size=(100, 100))
 
             for each_label in self.coord_labels:
                 self.remove_widget(each_label)
 
             for col, row, each_position in self.hexagon.gen_grid_positions(origin_position, row_count=self.ROWS, col_count=self.COLS):
+                index = row * self.COLS + col
+                #self.gridInfo[index]['id'] = "{0}x{1}".format(col, row)
                 Color(*self.MESH_COLOR)
-                self.hexagon.make_mesh(each_position)
-
+                self.hexagon.make_mesh(each_position, None)
                 Color(*self.EDGE_COLOR)
                 self.hexagon.make_outline(each_position)
-
-                each_label = self.coord_labels[row * self.COLS + col]
-                each_label.id = "{0}x{1}".format(col, row)
-                each_label.text = "{0}x{1}".format(col, row)
+                each_label = self.coord_labels[index]
+                each_label.text = "{0}x{1}".format(col, row)    #to be removed from prod
                 each_label.center = each_position.to_tuple()
+                each_label.col = copy(col)
+                each_label.row = copy(row)
+                each_label.each_position = copy(each_position)
                 self.add_widget(each_label)
