@@ -30,9 +30,7 @@ class Main_Screen(Screen):
         #self.HexGrid.hexagon.set_odd_q()
         #self.HexGrid.render_canvas()
         #self.part.pSys.pause()
-        lab = self.HexGrid.returnHexLab(2)
-        lab.text = "hello"
-        self.HexGrid.colourHex(each_position = lab.each_position)
+        self.HexGrid.changeHex(index = 2)
 
     def changePart(self):
         #self.HexGrid.hexagon.set_even_r()
@@ -49,4 +47,4 @@ class Main_Screen(Screen):
             Logger.info(str(lab.text) + ' = ' + str(lab.center))
 
     def removeHexChange(self):
-        self.HexGrid.test()
+        self.HexGrid.restorHex(index = 2)
