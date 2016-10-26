@@ -3,6 +3,7 @@ from kivy.logger import Logger
 from Brains.Hexagon import HexagonRoot
 from Brains.Particle import Particle
 from kivyparticle import ParticleSystem
+from kivy.graphics import Color
 
 class Main_Screen(Screen):
     def __init__(self, **kwargs):                       ##Override Screen's constructor
@@ -30,7 +31,7 @@ class Main_Screen(Screen):
         #self.HexGrid.hexagon.set_odd_q()
         #self.HexGrid.render_canvas()
         #self.part.pSys.pause()
-        self.HexGrid.changeHex(index = 2)
+        self.HexGrid.changeHex(2, hexCulu = Color(1, 1, 1), edgeCulu = Color(0, 0, 0))
 
     def changePart(self):
         #self.HexGrid.hexagon.set_even_r()
@@ -46,5 +47,5 @@ class Main_Screen(Screen):
             self.puddingDict[lab.text] = pa
             Logger.info(str(lab.text) + ' = ' + str(lab.center))
 
-    def removeHexChange(self):
-        self.HexGrid.restorHex(index = 2)
+    def drawLine(self):
+        self.HexGrid.drawLine(index = 2)

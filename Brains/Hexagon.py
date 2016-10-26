@@ -13,6 +13,8 @@ from math import pi, cos, sin, sqrt
 from docutils.nodes import row
 from copy import copy
 
+import pprint
+
 class Position(object):
     def __init__(self, *args, **kwargs):
         if args:
@@ -292,7 +294,7 @@ class HexagonRoot(FloatLayout):
 
 
 ######LINE DRAWING
-    def _cube_linedraw(self, a, b):
+    def _cube_linePlot(self, a, b):
 
         def _cube_distance(a, b):
             return (abs(a.x - b.x) + abs(a.y - b.y) + abs(a.z - b.z)) / 2
@@ -342,8 +344,10 @@ class HexagonRoot(FloatLayout):
         lab.canvas.add(lab.group)
         self.add_widget(lab)
 
-    def restorHex(self, **kwargs):
-        print self._cube_linedraw(Cube(1,1,1), Cube(2,2,2))
+    def drawLine(self, **kwargs):
+        result = self._cube_linePlot(Cube(1,1,1), Cube(2,7,2))
+        for cube in result:
+            Logger.info('x=' + str(cube.x) + ' y=' + str(cube.y) + ' z=' + str(cube.z))
 
     def _generateIG(self, lab):
         inG = InstructionGroup()
