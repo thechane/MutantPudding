@@ -40,6 +40,7 @@ class HexLab(Label):
         self.edgeCulu = kwargs.get('edgeCulu', Color(0.3, 0.3, 0.3))
         self.hexCulu = kwargs.get('edgeCulu', Color(0.5, 0.5, 0.5))
 
+
 class Vertex(object):
     def __init__(self, *args, **kwargs):
         if args:
@@ -264,6 +265,7 @@ class HexagonRoot(FloatLayout):
         self.X_AXIS_LEN = self.hexagon.get_short_len() * self.COLS
         self.Y_AXIS_LEN = self.hexagon.get_long_step() * self.ROWS
         self.centerish = (10,10)
+        self.redrawTrigger = Clock.create_trigger(self.render_canvas)
 
     def returnHexLab(self, index):
         return self.coord_labels[index]
@@ -289,6 +291,7 @@ class HexagonRoot(FloatLayout):
          print lab.hexCulu
          lab.hexCulu = Color(1,0,0)
          print lab.hexCulu
+         self.redrawTrigger()
 
     def restorHex(self, **kwargs):
         index = kwargs.get('index')
