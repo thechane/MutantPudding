@@ -6,7 +6,7 @@ from kivy.graphics import Color, Ellipse, Line, Mesh, Rectangle
 from kivy.graphics.instructions import InstructionGroup
 from kivy.clock import Clock
 from kivy.uix.label import Label
-from kivy.properties import ObjectProperty, ReferenceListProperty
+from kivy.properties import ObjectProperty, NumericProperty
 from kivy.logger import Logger
 
 from math import pi, cos, sin, sqrt
@@ -285,7 +285,10 @@ class HexagonRoot(FloatLayout):
     def changeHex(self, **kwargs):
          index = kwargs.get('index')
          lab = self.coord_labels[index]
-         lab.meshCulu = Color(1,1,1,1)
+         print lab.id
+         print lab.hexCulu
+         lab.hexCulu = Color(1,0,0)
+         print lab.hexCulu
 
     def restorHex(self, **kwargs):
         index = kwargs.get('index')
@@ -306,17 +309,16 @@ class HexagonRoot(FloatLayout):
 
         for col, row, each_position in self.hexagon.gen_grid_positions(origin_position, row_count=self.ROWS, col_count=self.COLS):
             index = row * self.COLS + col
-            Logger.info(str(index) + ' each_position = ' + str(each_position))
             id = "{0}x{1}".format(col, row)
+            Logger.info(str(index) + ' each_position = ' + str(each_position) + ', ID = ' + id)
             self.gridInfo[index]['id'] = id
             self.gridIndex[id] = index
-
             each_label = self.coord_labels[index]
-            each_label.text = id    #to be removed from prod
+            each_label.id = id
             each_label.center = each_position.to_tuple()
-            each_label.col = copy(col)
-            each_label.row = copy(row)
-            each_label.each_position = copy(each_position)
+            each_label.col = NumericProperty(col)
+            each_label.row = NumericProperty(row)
+            each_label.each_position = ObjectProperty(each_position)
             inG = InstructionGroup()
             inG.add(each_label.edgeCulu)
             inG.add(self.hexagon.make_outline(each_position))
@@ -325,7 +327,7 @@ class HexagonRoot(FloatLayout):
             each_label.group = inG
 
         for each_label in self.coord_labels:
-            self.remove_widget(each_label)
+            #self.remove_widget(each_label)
             each_label.canvas.clear()
             each_label.canvas.add(each_label.group)
             #each_label.bind(pos=self.render_canvas, size=self.render_canvas)
