@@ -282,16 +282,21 @@ class HexagonRoot(FloatLayout):
         self.X_AXIS_LEN = self.hexagon.get_short_len() * self.COLS
         self.Y_AXIS_LEN = self.hexagon.get_long_step() * self.ROWS
         self.centerish = (size[0] * 0.6, size[1] * 0.65)
-        self.render_canvas()
+        self.redrawTrigger()
 
     def changeHex(self, **kwargs):
          index = kwargs.get('index')
          lab = self.coord_labels[index]
-         print lab.id
-         print lab.hexCulu
          lab.hexCulu = Color(1,0,0)
-         print lab.hexCulu
-         self.redrawTrigger()
+         #self.redrawTrigger()
+         self.updateHex(lab)
+
+    def updateHex(self, lab):
+        lab.canvas.clear()
+        self.remove_widget(lab)
+        lab.group = self._generateIG(lab)
+        lab.canvas.add(lab.group)
+        self.add_widget(lab)
 
     def restorHex(self, **kwargs):
         index = kwargs.get('index')
@@ -300,8 +305,13 @@ class HexagonRoot(FloatLayout):
         with self.canvas.before:
             self.canvas.add(self.gridInfo[index]['instGroup'])
 
-    def updateHexInstGroup(self, *args):
-        self.canvas.ask_update()
+    def _generateIG(self, lab):
+        inG = InstructionGroup()
+        inG.add(lab.edgeCulu)
+        inG.add(self.hexagon.make_outline(lab.each_position))
+        inG.add(lab.hexCulu)
+        inG.add(self.hexagon.make_mesh(lab.each_position))
+        return inG
 
     def render_canvas(self, *args):
         origin_position = Position(*self.centerish)
@@ -321,17 +331,11 @@ class HexagonRoot(FloatLayout):
             each_label.center = each_position.to_tuple()
             each_label.col = NumericProperty(col)
             each_label.row = NumericProperty(row)
-            each_label.each_position = ObjectProperty(each_position)
-            inG = InstructionGroup()
-            inG.add(each_label.edgeCulu)
-            inG.add(self.hexagon.make_outline(each_position))
-            inG.add(each_label.hexCulu)
-            inG.add(self.hexagon.make_mesh(each_position))
-            each_label.group = inG
+            each_label.each_position = copy(each_position)
+            each_label.group = self._generateIG(each_label)
 
         for each_label in self.coord_labels:
-            #self.remove_widget(each_label)
+            self.remove_widget(each_label)
             each_label.canvas.clear()
             each_label.canvas.add(each_label.group)
-            #each_label.bind(pos=self.render_canvas, size=self.render_canvas)
             self.add_widget(each_label)
