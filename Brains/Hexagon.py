@@ -6,7 +6,7 @@ from kivy.graphics import Color, Ellipse, Line, Mesh, Rectangle
 from kivy.graphics.instructions import InstructionGroup
 from kivy.clock import Clock
 from kivy.uix.label import Label
-from kivy.properties import ObjectProperty
+from kivy.properties import ObjectProperty, ReferenceListProperty
 from kivy.logger import Logger
 
 from math import pi, cos, sin, sqrt
@@ -31,6 +31,14 @@ class Position(object):
 
     def to_tuple(self):
         return (self.x, self.y)
+
+
+class HexLab(Label):
+
+    def __init__(self, **kwargs):
+        super(HexLab, self).__init__(**kwargs)
+        self.edgeCulu = kwargs.get('edgeCulu', Color(0.3, 0.3, 0.3))
+        self.hexCulu = kwargs.get('edgeCulu', Color(0.5, 0.5, 0.5))
 
 class Vertex(object):
     def __init__(self, *args, **kwargs):
@@ -223,19 +231,13 @@ class KivyHexagon(Hexagon):
     def convert_mesh_vertices(self, vertices):
         return [e for e in self.gen_vertex_sequences(vertices)]
 
-    def make_mesh(self, center_position, group):
+    def make_mesh(self, center_position):
         corner_vertices = self.create_corner_vertices(center_position)
-        if group is None:
-            return Mesh(vertices=self.convert_mesh_vertices(corner_vertices), indices=xrange(len(corner_vertices)), mode='triangle_fan')
-        else:
-            group.add(Mesh(vertices=self.convert_mesh_vertices(corner_vertices), indices=xrange(len(corner_vertices)), mode='triangle_fan'))
+        return Mesh(vertices=self.convert_mesh_vertices(corner_vertices), indices=xrange(len(corner_vertices)), mode='triangle_fan')
 
-    def make_outline(self, center_position, group, width=1):
+    def make_outline(self, center_position):
         corner_positions = self.create_corner_positions(center_position)
-        if group is None:
-            return Line(points=self.convert_closed_line_points(corner_positions), width=width)
-        else:
-            group.add(Line(points=self.convert_closed_line_points(corner_positions), width=width))
+        return Line(points=self.convert_closed_line_points(corner_positions), width=1)
 
     def make_circle(self, center_position, radius):
         return Ellipse(pos=(center_position.x - radius, center_position.y - radius), size=(radius * 2, radius * 2))
@@ -244,7 +246,7 @@ class HexagonRoot(FloatLayout):
 
     def __init__(self, **kwargs):
         super(HexagonRoot, self).__init__(**kwargs)
-        self.bind(pos=self.render_canvas, size=self.render_canvas)
+        #self.bind(pos=self.render_canvas, size=self.render_canvas)
         self.size_hint = (1, 1)
         self.EDGE_LEN = kwargs.get('edgeLength', 1)
         self.EDGE_WIDTH = kwargs.get('edgeWidth', 1)
@@ -252,14 +254,10 @@ class HexagonRoot(FloatLayout):
         self.COLS = kwargs.get('cols', self.ROWS)
         self.CENTER_RADIUS = kwargs.get('centerRadius', 4)
         self.CORNER_RADIUS = kwargs.get('cornerRadius', 4)
-        self.CENTER_COLOR = kwargs.get('centerColor', (0.5, 0.1, 0.1))
-        self.CORNER_COLOR = kwargs.get('cornerColor', (0.5, 0.1, 0.1))
-        self.EDGE_COLOR = kwargs.get('edgeColor', (0.3, 0.3, 0.3))
-        self.AXIS_COLOR = kwargs.get('axisColor', (0.3, 0.3, 0.3))
-        self.MESH_COLOR = kwargs.get('meshColor', (0.5, 0.5, 0.5))
-        self.coord_labels = [Label(text="", pos_hint={}, size_hint=(None, None)) for i in xrange(self.ROWS * self.COLS)]
-        self.gridInfo = {key: {'id': None, 'instGroup': None, 'prevInstGroup': None} for key in xrange(self.ROWS * self.COLS)}
-        self.gridIndex = {}
+        #self.AXIS_COLOR = kwargs.get('axisColor', (0.3, 0.3, 0.3))
+        self.coord_labels = [HexLab(text="", pos_hint={}, size_hint=(None, None)) for i in xrange(self.ROWS * self.COLS)]       #all the labs
+        self.gridInfo = {key: {'id': None, 'something': None} for key in xrange(self.ROWS * self.COLS)}                         #all the grid information
+        self.gridIndex = {}                                                                                                     #an index to cross ref coord_labels with gridInfo
         self.hexagon = KivyHexagon()
         self.hexagon.set_edge_len(self.EDGE_LEN)
         self.hexagon.set_dir(+1, -1)
@@ -277,27 +275,17 @@ class HexagonRoot(FloatLayout):
         height = size[1] / self.ROWS
         width = sqrt(3)/2 * height
         self.EDGE_LEN = (height / 2) * 1.18
-        Logger.info('size = ' + str(size) + ', height = ' + str(height) + ', width = ' + str(width) + 'COLS = ' + str(self.COLS) + ', ROWS = ' + str(self.ROWS))
+        Logger.info('on_size fired -- size = ' + str(size) + ', height = ' + str(height) + ', width = ' + str(width) + 'COLS = ' + str(self.COLS) + ', ROWS = ' + str(self.ROWS))
         self.hexagon.set_edge_len(self.EDGE_LEN)
         self.X_AXIS_LEN = self.hexagon.get_short_len() * self.COLS
         self.Y_AXIS_LEN = self.hexagon.get_long_step() * self.ROWS
         self.centerish = (size[0] * 0.6, size[1] * 0.65)
+        self.render_canvas()
 
     def changeHex(self, **kwargs):
-        index = kwargs.get('index')
-        lab = self.coord_labels[index]
-        newGroup = InstructionGroup()
-        colour = kwargs.get('meshColour', (0, 1, 1, 0.2))
-        newGroup.add(Color(colour))
-        self.hexagon.make_mesh(lab.each_position, newGroup)
-        colour = kwargs.get('outlineColour', (0, 0, 1, 0.2))
-        newGroup.add(Color(colour))
-        self.hexagon.make_outline(lab.each_position, newGroup)
-        self.gridInfo[index]['prevInstGroup'] = self.gridInfo[index]['instGroup']
-        self.canvas.remove(self.gridInfo[index]['instGroup'])
-        self.gridInfo[index]['instGroup'] = newGroup
-        with self.canvas.before:
-            self.canvas.add(self.gridInfo[index]['instGroup'])
+         index = kwargs.get('index')
+         lab = self.coord_labels[index]
+         lab.meshCulu = Color(1,1,1,1)
 
     def restorHex(self, **kwargs):
         index = kwargs.get('index')
@@ -306,35 +294,39 @@ class HexagonRoot(FloatLayout):
         with self.canvas.before:
             self.canvas.add(self.gridInfo[index]['instGroup'])
 
+    def updateHexInstGroup(self, *args):
+        self.canvas.ask_update()
 
     def render_canvas(self, *args):
         origin_position = Position(*self.centerish)
         origin_position.x -= self.X_AXIS_LEN / 2
         origin_position.y += self.Y_AXIS_LEN / 2
-        #x_axis_position = Position(origin_position.x + self.X_AXIS_LEN, origin_position.y)
-        #y_axis_position = Position(origin_position.x, origin_position.y - self.Y_AXIS_LEN)
-        self.canvas.before.clear()
+        for each_label in self.coord_labels:
+            self.remove_widget(each_label)
 
-        with self.canvas.before:
-            #Color(*self.AXIS_COLOR)
-            #Line(points=self.hexagon.convert_line_points([x_axis_position, origin_position, y_axis_position]), width=self.EDGE_WIDTH)
-            #Rectangle(pos=(100, 100), size=(100, 100))
-            for each_label in self.coord_labels:
-                self.remove_widget(each_label)
+        for col, row, each_position in self.hexagon.gen_grid_positions(origin_position, row_count=self.ROWS, col_count=self.COLS):
+            index = row * self.COLS + col
+            Logger.info(str(index) + ' each_position = ' + str(each_position))
+            id = "{0}x{1}".format(col, row)
+            self.gridInfo[index]['id'] = id
+            self.gridIndex[id] = index
 
-            for col, row, each_position in self.hexagon.gen_grid_positions(origin_position, row_count=self.ROWS, col_count=self.COLS):
-                index = row * self.COLS + col
-                self.gridInfo[index]['id'] = "{0}x{1}".format(col, row)
-                self.gridIndex["{0}x{1}".format(col, row)] = index
-                self.gridInfo[index]['instGroup'] = InstructionGroup()
-                self.gridInfo[index]['instGroup'].add(Color(*self.MESH_COLOR))
-                self.hexagon.make_mesh(each_position, self.gridInfo[index]['instGroup'])
-                self.gridInfo[index]['instGroup'].add(Color(*self.EDGE_COLOR))
-                self.hexagon.make_outline(each_position, self.gridInfo[index]['instGroup'])
-                each_label = self.coord_labels[index]
-                each_label.text = "{0}x{1}".format(col, row)    #to be removed from prod
-                each_label.center = each_position.to_tuple()
-                each_label.col = copy(col)
-                each_label.row = copy(row)
-                each_label.each_position = copy(each_position)
-                self.add_widget(each_label)
+            each_label = self.coord_labels[index]
+            each_label.text = id    #to be removed from prod
+            each_label.center = each_position.to_tuple()
+            each_label.col = copy(col)
+            each_label.row = copy(row)
+            each_label.each_position = copy(each_position)
+            inG = InstructionGroup()
+            inG.add(each_label.edgeCulu)
+            inG.add(self.hexagon.make_outline(each_position))
+            inG.add(each_label.hexCulu)
+            inG.add(self.hexagon.make_mesh(each_position))
+            each_label.group = inG
+
+        for each_label in self.coord_labels:
+            self.remove_widget(each_label)
+            each_label.canvas.clear()
+            each_label.canvas.add(each_label.group)
+            #each_label.bind(pos=self.render_canvas, size=self.render_canvas)
+            self.add_widget(each_label)
