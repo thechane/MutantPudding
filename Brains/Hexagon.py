@@ -32,13 +32,19 @@ class Position(object):
     def to_tuple(self):
         return (self.x, self.y)
 
+class Cube(object):
+    def __init__(self, x, y, z):
+        self.x = x
+        self.y = y
+        self.z = z
 
 class HexLab(Label):
-
     def __init__(self, **kwargs):
         super(HexLab, self).__init__(**kwargs)
         self.edgeCulu = kwargs.get('edgeCulu', Color(0.3, 0.3, 0.3))
         self.hexCulu = kwargs.get('edgeCulu', Color(0.5, 0.5, 0.5))
+        self.line = kwargs.get('line', None)
+        self.lineCulu = kwargs.get('lineCulu', Color(0, 0, 0))
 
 
 class Vertex(object):
@@ -257,8 +263,7 @@ class HexagonRoot(FloatLayout):
         self.CORNER_RADIUS = kwargs.get('cornerRadius', 4)
         #self.AXIS_COLOR = kwargs.get('axisColor', (0.3, 0.3, 0.3))
         self.coord_labels = [HexLab(text="", pos_hint={}, size_hint=(None, None)) for i in xrange(self.ROWS * self.COLS)]       #all the labs
-        self.gridInfo = {key: {'id': None, 'something': None} for key in xrange(self.ROWS * self.COLS)}                         #all the grid information
-        self.gridIndex = {}                                                                                                     #an index to cross ref coord_labels with gridInfo
+        self.gridIndex = {}                                                                                                     #an index to cross ref coord_labels with id
         self.hexagon = KivyHexagon()
         self.hexagon.set_edge_len(self.EDGE_LEN)
         self.hexagon.set_dir(+1, -1)
@@ -284,11 +289,50 @@ class HexagonRoot(FloatLayout):
         self.centerish = (size[0] * 0.6, size[1] * 0.65)
         self.redrawTrigger()
 
-    def changeHex(self, **kwargs):
-         index = kwargs.get('index')
+
+
+######LINE DRAWING
+    def _cube_linedraw(self, a, b):
+
+        def _cube_distance(a, b):
+            return (abs(a.x - b.x) + abs(a.y - b.y) + abs(a.z - b.z)) / 2
+
+        def _cube_lerp(a, b, t):
+            return Cube(_lerp(a.x, b.x, t), _lerp(a.y, b.y, t), _lerp(a.z, b.z, t))
+
+        def _lerp(a, b, t):
+            return a + (b - a) * t
+
+        def _cube_round(h):
+            rx = round(h.x)
+            ry = round(h.y)
+            rz = round(h.z)
+            x_diff = abs(rx - h.x)
+            y_diff = abs(ry - h.y)
+            z_diff = abs(rz - h.z)
+            if x_diff > y_diff and x_diff > z_diff:
+                rx = -ry-rz
+            elif y_diff > z_diff:
+                ry = -rx-rz
+            else:
+                rz = -rx-ry
+            return Cube(rx, ry, rz)
+
+        N = _cube_distance(a, b)
+        results = []
+        for i in range(0,N):
+            results.append(_cube_round(_cube_lerp(a, b, 1.0 / N * i)))
+        return results
+
+
+######HEX Updating
+    def changeHex(self, index, **kwargs):
          lab = self.coord_labels[index]
-         lab.hexCulu = Color(1,0,0)
-         #self.redrawTrigger()
+         lab.hexCulu = kwargs.get('hexCulu', lab.hexCulu)
+         lab.edgeCulu = kwargs.get('edgeCulu', lab.edgeCulu)
+#          linePlot = kwargs.get('line', None)
+#          if linePlot is not None:
+#              lab.line = Line(points = linePlot, kwargs.get('lineWidth', 1))
          self.updateHex(lab)
 
     def updateHex(self, lab):
@@ -299,11 +343,7 @@ class HexagonRoot(FloatLayout):
         self.add_widget(lab)
 
     def restorHex(self, **kwargs):
-        index = kwargs.get('index')
-        self.canvas.remove(self.gridInfo[index]['instGroup'])
-        self.gridInfo[index]['instGroup'] = self.gridInfo[index]['prevInstGroup']
-        with self.canvas.before:
-            self.canvas.add(self.gridInfo[index]['instGroup'])
+        print self._cube_linedraw(Cube(1,1,1), Cube(2,2,2))
 
     def _generateIG(self, lab):
         inG = InstructionGroup()
@@ -324,7 +364,6 @@ class HexagonRoot(FloatLayout):
             index = row * self.COLS + col
             id = "{0}x{1}".format(col, row)
             Logger.info(str(index) + ' each_position = ' + str(each_position) + ', ID = ' + id)
-            self.gridInfo[index]['id'] = id
             self.gridIndex[id] = index
             each_label = self.coord_labels[index]
             each_label.id = id
