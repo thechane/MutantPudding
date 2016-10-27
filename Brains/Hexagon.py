@@ -271,26 +271,34 @@ class HexagonRoot(FloatLayout):
         self.dragPath = kwargs.get('dragPath', True)
         self.dragPlotA = None
         self.dragPlotB = None
+        self.dragPlotHitory = []
 
 
     def on_touch_down(self, touch):
         for index in xrange(self.ROWCOUNT):
             if self.dragPath is True and self.coord_labels[index].collide_point(*touch.pos):
                 touch.grab(self.coord_labels[index])
+                Logger.info('Grab at ' + self.coord_labels[index].id)
                 self.dragPlotA = index
+                return False
 
     def on_touch_move(self, touch):
         for index in xrange(self.ROWCOUNT):
-            if self.dragPath is True and self.coord_labels[index].collide_point(*touch.pos):
-                Logger.info('Grab at ' + self.coord_labels[index].id)
+            if self.dragPlotA is not None and self.coord_labels[index].collide_point(*touch.pos):
+                Logger.info('Move at ' + self.coord_labels[index].id)
                 self.dragPlotB = index
-                self.drawLine(self.dragPlotA, self.dragPlotB)
+                self.resetCuluz(self.dragPlotHitory)
+                self.dragPlotHitory = self.drawLine(self.dragPlotA, self.dragPlotB)
+                return False
 
     def on_touch_up(self, touch):
         for index in xrange(self.ROWCOUNT):
             if self.dragPath is True and self.coord_labels[index].collide_point(*touch.pos):
                 touch.ungrab(self.coord_labels[index])
                 Logger.info('ungrab at ' + self.coord_labels[index].id)
+                self.dragPlotA = None
+                self.dragPlotB = None
+                return False
 
     def returnHexLab(self, index):
         return self.coord_labels[index]
@@ -348,6 +356,14 @@ class HexagonRoot(FloatLayout):
         self.coord_labels[index].wall = True
         self.changeHex(index, hexCulu = Color(1, 0, 1), edgeCulu = Color(0, 0, 0))
 
+    def resetCuluz(self, cubeList):
+        for cube in cubeList:
+            index = self.cubeIndex[(cube.x, cube.y, cube.z)]
+            lab = self.coord_labels[index]
+            lab.hexCulu = copy(lab.baseHexCulu)
+            lab.edgeCulu = copy(lab.baseEdgeCulu)
+            self._updateHex(lab)
+
     def changeHex(self, index, **kwargs):
          lab = self.coord_labels[index]
          lab.baseHexCulu = copy(lab.hexCulu)
@@ -373,6 +389,7 @@ class HexagonRoot(FloatLayout):
             self.changeHex(self.cubeIndex[(cube.x, cube.y, cube.z)],
                             hexCulu = Color(0.2, 0.2, 0.2),
                             edgeCulu = Color(0 ,0 ,0))
+        return result
 
     def _generateIG(self, lab):
         inG = InstructionGroup()
