@@ -381,11 +381,16 @@ class HexagonRoot(FloatLayout):
          self._updateHex(lab)
 
     def _updateHex(self, lab):
-        lab.canvas.clear()
-        self.remove_widget(lab)
-        lab.group = self._generateIG(lab)
-        self.add_widget(lab)
-        lab.canvas.add(lab.group)
+        with lab.canvas.before:
+            lab.group.clear()
+            lab.group.add(lab.hexCulu)
+            lab.group.add(self.hexagon.make_mesh(lab.each_position))
+            lab.group.add(lab.edgeCulu)
+            lab.group.add(self.hexagon.make_outline(lab.each_position))
+
+#     def _updateHex(self, lab):
+#         lab.group = self._generateIG(lab)
+#         lab.canvas.add(lab.group)
 
     def drawLine(self, indexA, indexB):
         labA = self.coord_labels[indexA]
