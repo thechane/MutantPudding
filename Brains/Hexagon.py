@@ -43,10 +43,6 @@ class HexLab(Label):
         self.edgeCulu = kwargs.get('edgeCulu', Color(0.3, 0.3, 0.3))
         self.hexCulu = kwargs.get('edgeCulu', Color(0.5, 0.5, 0.5))
 
-    def on_touch_down(self, touch):
-        if self.collide_point(*touch.pos):
-            print self.id
-
 class Vertex(object):
     def __init__(self, *args, **kwargs):
         if args:
@@ -262,7 +258,8 @@ class HexagonRoot(FloatLayout):
         self.CENTER_RADIUS = kwargs.get('centerRadius', 4)
         self.CORNER_RADIUS = kwargs.get('cornerRadius', 4)
         #self.AXIS_COLOR = kwargs.get('axisColor', (0.3, 0.3, 0.3))
-        self.coord_labels = [HexLab(text="", pos_hint={}, size_hint=(None, None)) for i in xrange(self.ROWS * self.COLS)]
+        self.ROWCOUNT = self.ROWS * self.COLS
+        self.coord_labels = [HexLab(text="", pos_hint={}, size_hint=(None, None)) for i in xrange(self.ROWCOUNT)]
         self.cubeIndex = {}
         self.hexagon = KivyHexagon()
         self.hexagon.set_edge_len(self.EDGE_LEN)
@@ -271,6 +268,29 @@ class HexagonRoot(FloatLayout):
         self.Y_AXIS_LEN = self.hexagon.get_long_step() * self.ROWS
         self.centerish = (10,10)
         self.redrawTrigger = Clock.create_trigger(self.render_canvas)
+        self.dragPath = kwargs.get('dragPath', True)
+        self.dragPlotA = None
+        self.dragPlotB = None
+
+
+    def on_touch_down(self, touch):
+        for index in xrange(self.ROWCOUNT):
+            if self.dragPath is True and self.coord_labels[index].collide_point(*touch.pos):
+                touch.grab(self.coord_labels[index])
+                self.dragPlotA = index
+
+    def on_touch_move(self, touch):
+        for index in xrange(self.ROWCOUNT):
+            if self.dragPath is True and self.coord_labels[index].collide_point(*touch.pos):
+                Logger.info('Grab at ' + self.coord_labels[index].id)
+                self.dragPlotB = index
+                self.drawLine(self.dragPlotA, self.dragPlotB)
+
+    def on_touch_up(self, touch):
+        for index in xrange(self.ROWCOUNT):
+            if self.dragPath is True and self.coord_labels[index].collide_point(*touch.pos):
+                touch.ungrab(self.coord_labels[index])
+                Logger.info('ungrab at ' + self.coord_labels[index].id)
 
     def returnHexLab(self, index):
         return self.coord_labels[index]
@@ -288,8 +308,6 @@ class HexagonRoot(FloatLayout):
         self.Y_AXIS_LEN = self.hexagon.get_long_step() * self.ROWS
         self.centerish = (size[0] * 0.6, size[1] * 0.65)
         self.redrawTrigger()
-
-
 
 ######LINE DRAWING
     def _cube_linePlot(self, a, b):
