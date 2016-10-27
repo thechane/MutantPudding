@@ -43,6 +43,10 @@ class HexLab(Label):
         self.edgeCulu = kwargs.get('edgeCulu', Color(0.3, 0.3, 0.3))
         self.hexCulu = kwargs.get('edgeCulu', Color(0.5, 0.5, 0.5))
 
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos):
+            print self.id
+
 class Vertex(object):
     def __init__(self, *args, **kwargs):
         if args:
@@ -322,8 +326,14 @@ class HexagonRoot(FloatLayout):
 
 
 ######HEX Updating
+    def wallHex(self, index, **kwargs):
+        self.coord_labels[index].wall = True
+        self.changeHex(index, hexCulu = Color(1, 0, 1), edgeCulu = Color(0, 0, 0))
+
     def changeHex(self, index, **kwargs):
          lab = self.coord_labels[index]
+         lab.baseHexCulu = copy(lab.hexCulu)
+         lab.baseEdgeCulu = copy(lab.hexCulu)
          lab.hexCulu = kwargs.get('hexCulu', lab.hexCulu)
          lab.edgeCulu = kwargs.get('edgeCulu', lab.edgeCulu)
          self._updateHex(lab)
@@ -339,6 +349,7 @@ class HexagonRoot(FloatLayout):
         labA = self.coord_labels[indexA]
         labB = self.coord_labels[indexB]
         result = self._cube_linePlot(labA.cubeCoor, labB.cubeCoor)
+        result.append(labB.cubeCoor)
         for cube in result:
             Logger.info('x=' + str(cube.x) + ' y=' + str(cube.y) + ' z=' + str(cube.z))
             self.changeHex(self.cubeIndex[(cube.x, cube.y, cube.z)],
@@ -360,6 +371,7 @@ class HexagonRoot(FloatLayout):
         for each_label in self.coord_labels:
             self.remove_widget(each_label)
 
+        height = sqrt(3)/2 * (self.EDGE_LEN * 2)
         for col, row, each_position in self.hexagon.gen_grid_positions(origin_position, row_count=self.ROWS, col_count=self.COLS):
             index = row * self.COLS + col
             id = "{0}x{1}".format(col, row)
@@ -370,6 +382,8 @@ class HexagonRoot(FloatLayout):
             cubez = row
             cubey = -cubex - cubez
             self.cubeIndex[(cubex, cubey, cubez)] = index
+            each_label.width = self.EDGE_LEN
+            each_label.height = height
             each_label.cubeCoor = Cube(cubex, cubey, cubez)
             each_label.center = each_position.to_tuple()
             each_label.col = NumericProperty(col)
