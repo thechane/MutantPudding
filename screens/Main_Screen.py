@@ -48,4 +48,4 @@ class Main_Screen(Screen):
             Logger.info(str(lab.text) + ' = ' + str(lab.center))
 
     def drawLine(self):
-        self.HexGrid.drawLine(2, 48)
+        self.HexGrid.drawLine(2, 3)
