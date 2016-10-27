@@ -40,8 +40,11 @@ class Cube(object):
 class HexLab(Label):
     def __init__(self, **kwargs):
         super(HexLab, self).__init__(**kwargs)
-        self.edgeCulu = kwargs.get('edgeCulu', Color(0.3, 0.3, 0.3))
+        self.edgeCulu = kwargs.get('edgeCulu', Color(1, 1, 0.5))
         self.hexCulu = kwargs.get('edgeCulu', Color(0.5, 0.5, 0.5))
+        self.baseHexCulu = copy(self.hexCulu)
+        self.baseEdgeCulu = copy(self.edgeCulu)
+        self.range = kwargs.get('range', 3)
 
 class Vertex(object):
     def __init__(self, *args, **kwargs):
@@ -276,10 +279,14 @@ class HexagonRoot(FloatLayout):
 
     def on_touch_down(self, touch):
         for index in xrange(self.ROWCOUNT):
-            if self.dragPath is True and self.coord_labels[index].collide_point(*touch.pos):
-                touch.grab(self.coord_labels[index])
-                Logger.info('Grab at ' + self.coord_labels[index].id)
-                self.dragPlotA = index
+            if self.coord_labels[index].collide_point(*touch.pos):
+                if touch.is_double_tap:
+                    Logger.info('DoubleTap at ' + self.coord_labels[index].id)
+                    self.changeHex(index, hexCulu = Color(1, 0, 0.8), edgeCulu = Color(0, 0, 0), wall = True)
+                elif self.dragPath is True:
+                    touch.grab(self.coord_labels[index])
+                    Logger.info('Grab at ' + self.coord_labels[index].id)
+                    self.dragPlotA = index
                 return False
 
     def on_touch_move(self, touch):
@@ -366,10 +373,9 @@ class HexagonRoot(FloatLayout):
 
     def changeHex(self, index, **kwargs):
          lab = self.coord_labels[index]
-         lab.baseHexCulu = copy(lab.hexCulu)
-         lab.baseEdgeCulu = copy(lab.hexCulu)
-         lab.hexCulu = kwargs.get('hexCulu', lab.hexCulu)
-         lab.edgeCulu = kwargs.get('edgeCulu', lab.edgeCulu)
+         lab.wall       = kwargs.get('wall', False)
+         lab.hexCulu    = kwargs.get('hexCulu', lab.hexCulu)
+         lab.edgeCulu   = kwargs.get('edgeCulu', lab.edgeCulu)
          self._updateHex(lab)
 
     def _updateHex(self, lab):
@@ -384,7 +390,7 @@ class HexagonRoot(FloatLayout):
         labB = self.coord_labels[indexB]
         result = self._cube_linePlot(labA.cubeCoor, labB.cubeCoor)
         result.append(labB.cubeCoor)
-        for cube in result:
+        for cube in result[:labA.range]:
             Logger.info('x=' + str(cube.x) + ' y=' + str(cube.y) + ' z=' + str(cube.z))
             self.changeHex(self.cubeIndex[(cube.x, cube.y, cube.z)],
                             hexCulu = Color(0.2, 0.2, 0.2),
