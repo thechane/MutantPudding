@@ -274,7 +274,6 @@ class HexagonRoot(FloatLayout):
         self.dragPlotB = None
         self.dragPlotHitory = []
 
-
     def on_touch_down(self, touch):
         for index in xrange(self.ROWCOUNT):
             if self.coord_labels[index].collide_point(*touch.pos):
@@ -289,8 +288,9 @@ class HexagonRoot(FloatLayout):
 
     def on_touch_move(self, touch):
         for index in xrange(self.ROWCOUNT):
-            if self.dragPlotA is not None and self.coord_labels[index].collide_point(*touch.pos):
-                Logger.info('Move at ' + self.coord_labels[index].id)
+            lab = self.coord_labels[index]
+            if self.dragPlotA is not None and self.dragPlotA != index and self.dragPlotB != index and lab.collide_point(*touch.pos):
+                Logger.info('Move at ' + lab.id)
                 self.dragPlotB = index
                 self.resetCuluz(self.dragPlotHitory)
                 self.dragPlotHitory = self.drawLine(self.dragPlotA, self.dragPlotB)
@@ -381,12 +381,8 @@ class HexagonRoot(FloatLayout):
          self._updateHex(lab)
 
     def _updateHex(self, lab):
-        with lab.canvas.before:
-            lab.group.clear()
-            lab.group.add(lab.hexCulu)
-            lab.group.add(self.hexagon.make_mesh(lab.each_position))
-            lab.group.add(lab.edgeCulu)
-            lab.group.add(self.hexagon.make_outline(lab.each_position))
+        lab.group.add(lab.hexCulu)
+        lab.group.add(self.hexagon.make_mesh(lab.each_position))
 
 #     def _updateHex(self, lab):
 #         lab.group = self._generateIG(lab)
