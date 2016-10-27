@@ -1,6 +1,5 @@
 ## - credit -     https://github.com/myevan/kivy-hexagonal-grids
 #                 http://www.redblobgames.com/grids/hexagons/
-
 from kivy.uix.floatlayout import FloatLayout
 from kivy.graphics import Color, Ellipse, Line, Mesh, Rectangle
 from kivy.graphics.instructions import InstructionGroup
@@ -12,8 +11,6 @@ from kivy.logger import Logger
 from math import pi, cos, sin, sqrt
 from docutils.nodes import row
 from copy import copy
-
-import pprint
 
 class Position(object):
     def __init__(self, *args, **kwargs):
@@ -45,9 +42,6 @@ class HexLab(Label):
         super(HexLab, self).__init__(**kwargs)
         self.edgeCulu = kwargs.get('edgeCulu', Color(0.3, 0.3, 0.3))
         self.hexCulu = kwargs.get('edgeCulu', Color(0.5, 0.5, 0.5))
-        self.line = kwargs.get('line', None)
-        self.lineCulu = kwargs.get('lineCulu', Color(0, 0, 0))
-
 
 class Vertex(object):
     def __init__(self, *args, **kwargs):
@@ -264,8 +258,8 @@ class HexagonRoot(FloatLayout):
         self.CENTER_RADIUS = kwargs.get('centerRadius', 4)
         self.CORNER_RADIUS = kwargs.get('cornerRadius', 4)
         #self.AXIS_COLOR = kwargs.get('axisColor', (0.3, 0.3, 0.3))
-        self.coord_labels = [HexLab(text="", pos_hint={}, size_hint=(None, None)) for i in xrange(self.ROWS * self.COLS)]       #all the labs
-        self.gridIndex = {}                                                                                                     #an index to cross ref coord_labels with id
+        self.coord_labels = [HexLab(text="", pos_hint={}, size_hint=(None, None)) for i in xrange(self.ROWS * self.COLS)]
+        self.cubeIndex = {}
         self.hexagon = KivyHexagon()
         self.hexagon.set_edge_len(self.EDGE_LEN)
         self.hexagon.set_dir(+1, -1)
@@ -332,22 +326,24 @@ class HexagonRoot(FloatLayout):
          lab = self.coord_labels[index]
          lab.hexCulu = kwargs.get('hexCulu', lab.hexCulu)
          lab.edgeCulu = kwargs.get('edgeCulu', lab.edgeCulu)
-#          linePlot = kwargs.get('line', None)
-#          if linePlot is not None:
-#              lab.line = Line(points = linePlot, kwargs.get('lineWidth', 1))
-         self.updateHex(lab)
+         self._updateHex(lab)
 
-    def updateHex(self, lab):
+    def _updateHex(self, lab):
         lab.canvas.clear()
         self.remove_widget(lab)
         lab.group = self._generateIG(lab)
         lab.canvas.add(lab.group)
         self.add_widget(lab)
 
-    def drawLine(self, **kwargs):
-        result = self._cube_linePlot(Cube(1,1,1), Cube(2,7,2))
+    def drawLine(self, indexA, indexB):
+        labA = self.coord_labels[indexA]
+        labB = self.coord_labels[indexB]
+        result = self._cube_linePlot(labA.cubeCoor, labB.cubeCoor)
         for cube in result:
             Logger.info('x=' + str(cube.x) + ' y=' + str(cube.y) + ' z=' + str(cube.z))
+            self.changeHex(self.cubeIndex[(cube.x, cube.y, cube.z)],
+                            hexCulu = Color(0.2, 0.2, 0.2),
+                            edgeCulu = Color(0 ,0 ,0))
 
     def _generateIG(self, lab):
         inG = InstructionGroup()
@@ -368,9 +364,13 @@ class HexagonRoot(FloatLayout):
             index = row * self.COLS + col
             id = "{0}x{1}".format(col, row)
             Logger.info(str(index) + ' each_position = ' + str(each_position) + ', ID = ' + id)
-            self.gridIndex[id] = index
             each_label = self.coord_labels[index]
             each_label.id = id
+            cubex = col - (row - (row&1)) / 2
+            cubez = row
+            cubey = -cubex - cubez
+            self.cubeIndex[(cubex, cubey, cubez)] = index
+            each_label.cubeCoor = Cube(cubex, cubey, cubez)
             each_label.center = each_position.to_tuple()
             each_label.col = NumericProperty(col)
             each_label.row = NumericProperty(row)
