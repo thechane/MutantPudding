@@ -1,7 +1,7 @@
 ## - credit -     https://github.com/myevan/kivy-hexagonal-grids
 #                 http://www.redblobgames.com/grids/hexagons/
 from kivy.uix.floatlayout import FloatLayout
-from kivy.graphics import Color, Ellipse, Line, Mesh, Rectangle
+from kivy.graphics import Color, Ellipse, Line, Mesh, Rectangle, Callback
 from kivy.graphics.instructions import InstructionGroup
 from kivy.clock import Clock
 from kivy.uix.label import Label
@@ -43,6 +43,7 @@ class HexLab(Label):
         self.hexCulu = kwargs.get('edgeCulu', Color(0.5, 0.5, 0.5))
         self.edgeCulu = kwargs.get('edgeCulu', Color(1, 1, 0.5))
         self.range = kwargs.get('range', 5)
+        self.wall = kwargs.get('wall', False)
 
 class Vertex(object):
     def __init__(self, *args, **kwargs):
@@ -279,7 +280,7 @@ class HexagonRoot(FloatLayout):
             if self.coord_labels[index].collide_point(*touch.pos):
                 if self.dragPlotA is None and touch.is_double_tap:
                     Logger.info('DoubleTap at ' + self.coord_labels[index].id)
-                    self.changeHex(index, hexCulu = Color(1, 0, 0.8), edgeCulu = Color(0, 0, 0), wall = True)
+                    self.changeHexColor(index, hexCulu = Color(1, 0, 0.8), edgeCulu = Color(0, 0, 0), wall = True)
                 elif self.dragPath is True:
                     touch.grab(self.coord_labels[index])
                     Logger.info('Grab at ' + self.coord_labels[index].id)
@@ -292,13 +293,20 @@ class HexagonRoot(FloatLayout):
             if self.dragPlotA is not None and self.dragPlotA != index and self.dragPlotB != index and lab.collide_point(*touch.pos):
                 Logger.info('Move at ' + lab.id)
                 self.dragPlotB = index
-                self.resetCuluz(self.dragPlotHitory)
+                try:
+                    self.canvas.remove(self.linePlot)
+                except:
+                    Logger.error('AHHHHH ')
+                    pass
                 self.dragPlotHitory = self.drawLine(self.dragPlotA, self.dragPlotB)
                 return False
 
     def on_touch_up(self, touch):
         if self.dragPlotA is not None:
-            self.resetCuluz(self.dragPlotHitory)
+            try:
+                self.canvas.remove(self.linePlot)
+            except:
+                pass
         for index in xrange(self.ROWCOUNT):
             if self.dragPlotA is not None and self.coord_labels[index].collide_point_forhex(*touch.pos):
                 touch.ungrab(self.coord_labels[index])
@@ -361,30 +369,27 @@ class HexagonRoot(FloatLayout):
 ######HEX Updating
     def wallHex(self, index, **kwargs):
         self.coord_labels[index].wall = True
-        self.changeHex(index, hexCulu = Color(1, 0, 1), edgeCulu = Color(0, 0, 0))
+        self.changeHexColor(index, hexCulu = Color(1, 0, 1), edgeCulu = Color(0, 0, 0))
 
     def resetCuluz(self, cubeList):
         for cube in cubeList:
             index = self.cubeIndex[(cube.x, cube.y, cube.z)]
             lab = self.coord_labels[index]
             Logger.info('ResetCuluz on ' + str(lab.id))
-            self.changeHex(index, hexCulu = copy(lab.prevHexCol), edgeCulu = copy(lab.prevEdgeCol), skipPrevCol = True)
+            lab.group.add(lab.prevHexCol)
+            lab.group.add(self.hexagon.make_mesh(lab.each_position))
 
-    def changeHex(self, index, **kwargs):
-         lab = self.coord_labels[index]
-         if kwargs.get('skipPrevCol', False) is False:
-             lab.prevHexCol     = copy(lab.hexCulu)
-             lab.prevEdgeCol    = copy(lab.edgeCulu)
-         lab.wall           = kwargs.get('wall', False)
-         lab.hexCulu        = kwargs.get('hexCulu', lab.hexCulu)
-         lab.edgeCulu       = kwargs.get('edgeCulu', lab.edgeCulu)
-         self._updateHex(lab)
-
-    def _updateHex(self, lab):
+    def changeHexColor(self, index, **kwargs):
+        lab = self.coord_labels[index]
+        if lab.wall is True and kwargs.get('wall', False) is True:
+            lab.hexCulu = lab.prevHexCol
+        else:
+            lab.prevHexCol = copy(lab.hexCulu)
+            lab.hexCulu = kwargs.get('hexCulu', lab.hexCulu)
+        lab.wall = kwargs.get('wall', False)
+        #lab.group.add(Callback(self.resetCuluz(self.dragPlotHitory)))
         lab.group.add(lab.hexCulu)
         lab.group.add(self.hexagon.make_mesh(lab.each_position))
-
-#     def _updateHex(self, lab):
 #         lab.group = self._generateIG(lab)
 #         lab.canvas.add(lab.group)
 
@@ -393,11 +398,19 @@ class HexagonRoot(FloatLayout):
         labB = self.coord_labels[indexB]
         result = self._cube_linePlot(labA.cubeCoor, labB.cubeCoor)
         result.append(labB.cubeCoor)
+        coors = []
         for cube in result[:labA.range]:
-            Logger.info('Drawing line at ' + str(self.coord_labels[ self.cubeIndex[(cube.x,cube.y,cube.z)] ].id) + ', Cube coords: x=' + str(cube.x) + ' y=' + str(cube.y) + ' z=' + str(cube.z))
-            self.changeHex(self.cubeIndex[(cube.x, cube.y, cube.z)],
-                            hexCulu = Color(0.2, 0.2, 0.2),
-                            edgeCulu = Color(0 ,0 ,0))
+            lab = self.coord_labels[ self.cubeIndex[(cube.x,cube.y,cube.z)] ]
+            Logger.info('Plotting line at ' + str(lab.id) + ', Cube coords: x=' + str(cube.x) + ' y=' + str(cube.y) + ' z=' + str(cube.z))
+            coors.append(lab.center[0])
+            coors.append(lab.center[1])
+#             self.changeHexColor(self.cubeIndex[(cube.x, cube.y, cube.z)],
+#                             hexCulu = Color(0.2, 0.2, 0.2),
+#                             edgeCulu = Color(0 ,0 ,0))
+        self.linePlot = InstructionGroup()
+        self.linePlot.add(Color(1,1,1))
+        self.linePlot.add(Line(points=coors, width=10))
+        self.canvas.add(self.linePlot)
         return result[:labA.range]
 
     def _generateIG(self, lab):
