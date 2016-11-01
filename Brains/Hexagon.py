@@ -333,7 +333,7 @@ class HexagonRoot(FloatLayout):
         self.redrawTrigger()
 
 ######LINE DRAWING
-    def _cube_linePlot(self, a, b):
+    def cube_linePlot(self, a, b):
 
         def _cube_distance(a, b):
             return (abs(a.x - b.x) + abs(a.y - b.y) + abs(a.z - b.z)) / 2
@@ -365,6 +365,45 @@ class HexagonRoot(FloatLayout):
             results.append(_cube_round(_cube_lerp(a, b, 1.0 / N * i)))
         return results
 
+    def cube_reachable(self, start, steps):
+
+        start = self.coord_labels[20].cubeCoor
+
+        def _cube_add (cubeA, cubeB):
+            return Cube(cubeA.x + cubeB.x, cubeA.y + cubeB.y, cubeA.z + cubeB.z)
+#
+#         allReachableCubes = []
+#         for dx in range(-steps, steps):
+#             for dy in range(max(-steps, -dx-steps), min(steps, -dx+steps)):
+#                 dz = -dx-dy
+#                 allReachableCubes.append(_cube_add(start, Cube(dx, dy, dz)))
+
+        def _cube_neighbor(cube, dirIndex):
+            directions = (
+               Cube(+1, -1,  0), Cube(+1,  0, -1), Cube( 0, +1, -1),
+               Cube(-1, +1,  0), Cube(-1,  0, +1), Cube( 0, -1, +1)
+            )
+            return _cube_add(cube, directions[dirIndex])
+
+        visited = []
+        visited.append(start)
+        fringes = []
+        fringes.append([start])
+        for k in range(1, steps):
+            fringes.append([])
+            for cube in fringes[k-1]:
+                for dirIndex in range(0, 6):
+                    neighbor = _cube_neighbor(cube, dirIndex)
+                    if neighbor not in visited:
+                        visited.append(neighbor)
+                        fringes[k].append(neighbor)
+
+        self.lineP = InstructionGroup()
+        self.lineP.add(Color(1,0,0))
+        self.lineP.add(Line(points=visited, width=5))
+        self.canvas.add(self.lineP)
+
+        return visited
 
 ######HEX Updating
     def wallHex(self, index, **kwargs):
@@ -396,7 +435,7 @@ class HexagonRoot(FloatLayout):
     def drawLine(self, indexA, indexB):
         labA = self.coord_labels[indexA]
         labB = self.coord_labels[indexB]
-        result = self._cube_linePlot(labA.cubeCoor, labB.cubeCoor)
+        result = self.cube_linePlot(labA.cubeCoor, labB.cubeCoor)
         result.append(labB.cubeCoor)
         coors = []
         for cube in result[:labA.range]:
