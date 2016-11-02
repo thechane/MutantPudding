@@ -367,7 +367,7 @@ class HexagonRoot(FloatLayout):
 
     def cube_reachable(self, start, steps):
 
-        start = self.coord_labels[20].cubeCoor
+        start = self.coord_labels[20].cube
 
         def _cube_add (cubeA, cubeB):
             return Cube(cubeA.x + cubeB.x, cubeA.y + cubeB.y, cubeA.z + cubeB.z)
@@ -385,17 +385,18 @@ class HexagonRoot(FloatLayout):
             )
             return _cube_add(cube, directions[dirIndex])
 
-        visited = []
-        visited.append(start)
+        visited = set()
+        visited.add(start)
         fringes = []
         fringes.append([start])
         for k in range(1, steps):
             fringes.append([])
             for cube in fringes[k-1]:
                 for dirIndex in range(0, 6):
+                    Logger.info('dir index = ' + str(dirIndex) + ', coor = ' + str(self.cubeIndex[(cube.x, cube.y, cube.z)]))
                     neighbor = _cube_neighbor(cube, dirIndex)
-                    if neighbor not in visited:
-                        visited.append(neighbor)
+                    if neighbor not in visited and self.coord_labels[ self.cubeIndex[(neighbor.x, neighbor.y, neighbor.z)] ].wall is False:
+                        visited.add(neighbor)
                         fringes[k].append(neighbor)
 
         self.lineP = InstructionGroup()
@@ -435,8 +436,8 @@ class HexagonRoot(FloatLayout):
     def drawLine(self, indexA, indexB):
         labA = self.coord_labels[indexA]
         labB = self.coord_labels[indexB]
-        result = self.cube_linePlot(labA.cubeCoor, labB.cubeCoor)
-        result.append(labB.cubeCoor)
+        result = self.cube_linePlot(labA.cube, labB.cube)
+        result.append(labB.cube)
         coors = []
         for cube in result[:labA.range]:
             lab = self.coord_labels[ self.cubeIndex[(cube.x,cube.y,cube.z)] ]
@@ -480,7 +481,7 @@ class HexagonRoot(FloatLayout):
             self.cubeIndex[(cubex, cubey, cubez)] = index
             each_label.width = self.EDGE_LEN
             each_label.height = height
-            each_label.cubeCoor = Cube(cubex, cubey, cubez)
+            each_label.cube = Cube(cubex, cubey, cubez)
             each_label.center = each_position.to_tuple()
             each_label.col = NumericProperty(col)
             each_label.row = NumericProperty(row)
