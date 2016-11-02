@@ -9,18 +9,15 @@ class Main_Screen(Screen):
     def __init__(self, **kwargs):                       ##Override Screen's constructor
         Logger.info('Main_Screen init Fired')
         super(Main_Screen, self).__init__(**kwargs)     ##but also run parent class constructor (__init__)
-        Logger.info('Size - ' + str(self.ids['rootFloat'].size))
+        Logger.info('Size - ' + str(self.ids['HexGrid'].size))
         COLS=12
         ROWS=12
-        rootFloat = self.ids['rootFloat']
-        self.HexGrid = HexagonRoot()
         self.puddingDict = {}
-        rootFloat.add_widget(self.HexGrid)
 
     def startPart(self):
-        #self.HexGrid.hexagon.set_odd_r()
-        #self.HexGrid.render_canvas()
-        hex = self.HexGrid.returnHexLab(2)
+        #self.ids['HexGrid'].hexagon.set_odd_r()
+        #self.ids['HexGrid'].render_canvas()
+        hex = self.ids['HexGrid'].returnHexLab(2)
         pa = Particle()
         pa.show(effect = ParticleSystem('./effects/royal.pex'), coor = hex.center, layout = self.ids['rootFloat'])
         self.part = pa
@@ -28,11 +25,11 @@ class Main_Screen(Screen):
         Logger.info(str(self.part.pSys.capacity))
 
     def changeHex(self):
-        #self.HexGrid.hexagon.set_odd_q()
-        #self.HexGrid.render_canvas()
+        #self.ids['HexGrid'].hexagon.set_odd_q()
+        #self.ids['HexGrid'].render_canvas()
         #self.part.pSys.pause()
         #self.HexGrid.changeHexColor(2, hexCulu = Color(1, 0, 1), edgeCulu = Color(0, 0, 0))
-        self.HexGrid.cube_reachable(2, 4)
+        self.ids['HexGrid'].cube_reachable(2, 4)
 
     def changePart(self):
         #self.HexGrid.hexagon.set_even_r()
@@ -42,7 +39,7 @@ class Main_Screen(Screen):
     def allPart(self):
         #self.HexGrid.hexagon.set_even_q()
         #self.HexGrid.render_canvas()
-        for lab in self.HexGrid.returnHexLables():
+        for lab in self.ids['HexGrid'].returnHexLables():
             pa = Particle()
             pa.show(effect = ParticleSystem('./effects/royal.pex'), coor = lab.center, layout = self.ids['rootFloat'])
             self.puddingDict[lab.text] = pa

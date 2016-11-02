@@ -1,3 +1,4 @@
+#:import HexagonRoot Brains.Hexagon
 <Main_Screen>:
     name: 'mainScreen'
     BoxLayout:
@@ -44,8 +45,9 @@
                     group: "orientation"
                     text: "even-q"
                     on_press: root.make_even_q()
-            FloatLayout:
-                id: rootFloat
+            HexagonRoot:
+                id: HexGrid
+                #main: HexGrid
                 size_hint: (1, 0.8)
                 canvas.after:
                     Color:

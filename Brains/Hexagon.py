@@ -249,6 +249,8 @@ class KivyHexagon(Hexagon):
 
 class HexagonRoot(FloatLayout):
 
+    #HexGrid = ObjectProperty()
+
     def __init__(self, **kwargs):
         super(HexagonRoot, self).__init__(**kwargs)
         #self.bind(pos=self.render_canvas, size=self.render_canvas)
@@ -394,8 +396,12 @@ class HexagonRoot(FloatLayout):
 
         def _cube_neighbor(cube, dirIndex):
             directions = (
-               (lambda x:x+1, lambda x:x-1,  lambda x:x+0), (lambda x:x+1,  lambda x:x+0, lambda x:x-1), (lambda x:x+0, lambda x:x+1, lambda x:x-1),
-               (lambda x:x-1, lambda x:x+1,  lambda x:x+0), (lambda x:x-1,  lambda x:x+0, lambda x:x+1), (lambda x:x+0, lambda x:x-1, lambda x:x+1)
+               (lambda x:x+1, lambda x:x-1, lambda x:x+0),
+               (lambda x:x+1, lambda x:x+0, lambda x:x-1),
+               (lambda x:x+0, lambda x:x+1, lambda x:x-1),
+               (lambda x:x-1, lambda x:x+1, lambda x:x+0),
+               (lambda x:x-1, lambda x:x+0, lambda x:x+1),
+               (lambda x:x+0, lambda x:x-1, lambda x:x+1)
             )
             return _cube_add(cube, directions[dirIndex])
 
