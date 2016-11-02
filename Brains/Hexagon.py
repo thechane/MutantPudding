@@ -365,23 +365,37 @@ class HexagonRoot(FloatLayout):
             results.append(_cube_round(_cube_lerp(a, b, 1.0 / N * i)))
         return results
 
+    def cubeID (self,cube):
+        return (cube.x, cube.y, cube.z)
+
     def cube_reachable(self, start, steps):
 
         start = self.coord_labels[20].cube
+        steps = 2
 
-        def _cube_add (cubeA, cubeB):
-            return Cube(cubeA.x + cubeB.x, cubeA.y + cubeB.y, cubeA.z + cubeB.z)
+#         def _cube_add (cubeA, cubeB):
+#             return Cube(cubeA.x + cubeB.x, cubeA.y + cubeB.y, cubeA.z + cubeB.z)
 #
 #         allReachableCubes = []
 #         for dx in range(-steps, steps):
 #             for dy in range(max(-steps, -dx-steps), min(steps, -dx+steps)):
 #                 dz = -dx-dy
 #                 allReachableCubes.append(_cube_add(start, Cube(dx, dy, dz)))
+#
+#         def _cube_neighbor(cube, dirIndex):
+#             directions = (
+#                Cube(+1, -1,  0), Cube(+1,  0, -1), Cube( 0, +1, -1),
+#                Cube(-1, +1,  0), Cube(-1,  0, +1), Cube( 0, -1, +1)
+#             )
+#             return _cube_add(cube, directions[dirIndex])
+
+        def _cube_add (cube, op):
+            return Cube(op[0](cube.x), op[1](cube.y), op[2](cube.z))
 
         def _cube_neighbor(cube, dirIndex):
             directions = (
-               Cube(+1, -1,  0), Cube(+1,  0, -1), Cube( 0, +1, -1),
-               Cube(-1, +1,  0), Cube(-1,  0, +1), Cube( 0, -1, +1)
+               (lambda x:x+1, lambda x:x-1,  lambda x:x+0), (lambda x:x+1,  lambda x:x+0, lambda x:x-1), (lambda x:x+0, lambda x:x+1, lambda x:x-1),
+               (lambda x:x-1, lambda x:x+1,  lambda x:x+0), (lambda x:x-1,  lambda x:x+0, lambda x:x+1), (lambda x:x+0, lambda x:x-1, lambda x:x+1)
             )
             return _cube_add(cube, directions[dirIndex])
 
@@ -393,16 +407,18 @@ class HexagonRoot(FloatLayout):
             fringes.append([])
             for cube in fringes[k-1]:
                 for dirIndex in range(0, 6):
-                    Logger.info('dir index = ' + str(dirIndex) + ', coor = ' + str(self.cubeIndex[(cube.x, cube.y, cube.z)]))
+                    Logger.info('dir index = ' + str(dirIndex) + ', coor = ' + str(self.coord_labels[ self.cubeIndex[self.cubeID(cube)] ].id))
                     neighbor = _cube_neighbor(cube, dirIndex)
-                    if neighbor not in visited and self.coord_labels[ self.cubeIndex[(neighbor.x, neighbor.y, neighbor.z)] ].wall is False:
+                    if neighbor not in visited and self.cubeID(neighbor) in self.cubeIndex and self.coord_labels[ self.cubeIndex[self.cubeID(neighbor)] ].wall is False:
                         visited.add(neighbor)
                         fringes[k].append(neighbor)
-
-        self.lineP = InstructionGroup()
-        self.lineP.add(Color(1,0,0))
-        self.lineP.add(Line(points=visited, width=5))
-        self.canvas.add(self.lineP)
+        Logger.info('Path is - ' + str(visited))
+        for cube in visited:
+            lab = self.coord_labels[ self.cubeIndex[self.cubeID(cube)] ]
+            self.remove_widget(lab)
+            lab.color = [1, 0, 0, 1]
+            lab.text = "HI"
+            self.add_widget(lab, 0)
 
         return visited
 
