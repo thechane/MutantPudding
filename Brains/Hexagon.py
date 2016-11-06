@@ -7,6 +7,7 @@ from kivy.clock import Clock
 from kivy.uix.label import Label
 from kivy.properties import ObjectProperty, NumericProperty, BooleanProperty, StringProperty
 from kivy.logger import Logger
+from kivy.core.window import Window
 
 from math import pi, cos, sin, sqrt
 from docutils.nodes import row
@@ -42,14 +43,12 @@ class HexLab(Label):
     edgeCulu = Color(None)
     range = NumericProperty(None)
     wall = BooleanProperty(None)
-    labText = StringProperty(None)
     def __init__(self, **kwargs):
         super(HexLab, self).__init__(**kwargs)
         self.hexCulu = kwargs.get('edgeCulu', Color(0.5, 0.5, 0.5))
         self.edgeCulu = kwargs.get('edgeCulu', Color(1, 1, 0.5))
         self.range = kwargs.get('range', 5)
         self.wall = kwargs.get('wall', False)
-        self.bind(labText=self.setter('text'))
 
 class Vertex(object):
     def __init__(self, *args, **kwargs):
@@ -288,6 +287,7 @@ class HexagonRoot(FloatLayout):
                     Logger.info('DoubleTap at ' + self.coord_labels[index].id)
                     lab = self.changeHexColor(index, hexCulu = Color(1, 0, 0.8), edgeCulu = Color(0, 0, 0))
                     lab.wall = True
+                    lab.text = 'WALL'
                 elif self.dragPath is True:
                     touch.grab(self.coord_labels[index])
                     Logger.info('Grab at ' + self.coord_labels[index].id)
@@ -395,10 +395,9 @@ class HexagonRoot(FloatLayout):
 #             )
 #             return _cube_add(cube, directions[dirIndex])
 
-        def _cube_add (cube, op):
-            return Cube(op[0](cube.x), op[1](cube.y), op[2](cube.z))
-
         def _cube_neighbor(cube, dirIndex):
+            def _cube_add (cube, op):
+                return Cube(op[0](cube.x), op[1](cube.y), op[2](cube.z))
             directions = (
                (lambda x:x+1, lambda x:x-1, lambda x:x+0),
                (lambda x:x+1, lambda x:x+0, lambda x:x-1),
@@ -436,6 +435,7 @@ class HexagonRoot(FloatLayout):
         lab.hexCulu = kwargs.get('hexCulu', lab.hexCulu)
         lab.group.add(lab.hexCulu)
         lab.group.add(self.hexagon.make_mesh(lab.each_position))
+        lab.group.add(lab.edgeCulu)
         return lab
 
     def drawLine(self, indexA, indexB):
@@ -459,10 +459,11 @@ class HexagonRoot(FloatLayout):
         origin_position = Position(*self.centerish)
         origin_position.x -= self.X_AXIS_LEN / 2
         origin_position.y += self.Y_AXIS_LEN / 2
+
         for lab in self.coord_labels:
             self.remove_widget(lab)
 
-        height = sqrt(3)/2 * (self.EDGE_LEN * 2)
+        width = sqrt(3)/2 * (self.EDGE_LEN * 2)
         for col, row, each_position in self.hexagon.gen_grid_positions(origin_position, row_count=self.ROWS, col_count=self.COLS):
             index = row * self.COLS + col
             id = "{0}x{1}".format(col, row)
@@ -473,8 +474,8 @@ class HexagonRoot(FloatLayout):
             cubez = row
             cubey = -cubex - cubez
             self.cubeIndex[(cubex, cubey, cubez)] = index
-            lab.width = self.EDGE_LEN
-            lab.height = height
+            lab.width = width
+            lab.height = self.EDGE_LEN
             lab.color = (1,0,1,1)
             lab.text_size = (self.EDGE_LEN, None)
             lab.valign = 'middle'
@@ -490,6 +491,8 @@ class HexagonRoot(FloatLayout):
             lab.group.add(self.hexagon.make_outline(lab.each_position))
             lab.group.add(lab.hexCulu)
             lab.group.add(self.hexagon.make_mesh(lab.each_position))
+            lab.group.add(Color(1, 0, 0, 1))
+            lab.group.add(Rectangle(pos=lab.pos, size=lab.size))
             lab.collide_point_forhex = lab.collide_point
 
         for lab in self.coord_labels:
