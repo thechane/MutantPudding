@@ -254,6 +254,8 @@ class KivyHexagon(Hexagon):
 
 class HexagonRoot(FloatLayout):
 
+    flashText = StringProperty('')  # #Text for the flash boxes
+
     def __init__(self, **kwargs):
         super(HexagonRoot, self).__init__(**kwargs)
         #self.bind(pos=self.render_canvas, size=self.render_canvas)
@@ -279,6 +281,24 @@ class HexagonRoot(FloatLayout):
         self.dragPlotA = None
         self.dragPlotB = None
         self.dragPlotHitory = []
+        self.flashTrigger = Clock.create_trigger(self._Flash_Box)
+
+    def Widget_ToTop(self, widget):
+        self.remove_widget(widget)
+        self.add_widget(widget)
+        return True
+
+    def _Flash_Box(self, dt):
+        Logger.info('_Flash_Box FIRED')
+        fL = Label(text = 'AHH', font_size = '18sp', size_hint = (None,None))
+        fL.pos = 10, 10
+        fL.color = (0,0,0,1)
+        self.Widget_ToTop(fL)
+
+    def Flash_Box(self, message):
+        Logger.info('Flash_Box FIRED')
+        self.flashText = message
+        self.flashTrigger()
 
     def on_touch_down(self, touch):
         for index in xrange(self.ROWCOUNT):
@@ -287,7 +307,7 @@ class HexagonRoot(FloatLayout):
                     Logger.info('DoubleTap at ' + self.coord_labels[index].id)
                     lab = self.changeHexColor(index, hexCulu = Color(1, 0, 0.8), edgeCulu = Color(0, 0, 0))
                     lab.wall = True
-                    lab.text = 'WALL'
+                    self.Flash_Box('WALL')
                 elif self.dragPath is True:
                     touch.grab(self.coord_labels[index])
                     Logger.info('Grab at ' + self.coord_labels[index].id)
@@ -477,7 +497,7 @@ class HexagonRoot(FloatLayout):
             lab.width = width
             lab.height = self.EDGE_LEN
             lab.color = (1,0,1,1)
-            lab.text_size = (self.EDGE_LEN, None)
+            lab.font_size = '10sp'
             lab.valign = 'middle'
             lab.markup = True
             lab.labText = id
