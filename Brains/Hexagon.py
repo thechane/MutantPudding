@@ -5,7 +5,7 @@ from kivy.graphics import Color, Ellipse, Line, Mesh, Rectangle, Callback
 from kivy.graphics.instructions import InstructionGroup
 from kivy.clock import Clock
 from kivy.uix.label import Label
-from kivy.properties import ObjectProperty, NumericProperty
+from kivy.properties import ObjectProperty, NumericProperty, BooleanProperty, StringProperty
 from kivy.logger import Logger
 
 from math import pi, cos, sin, sqrt
@@ -38,12 +38,18 @@ class Cube(object):
         self.z = z
 
 class HexLab(Label):
+    hexCulu = Color(None)
+    edgeCulu = Color(None)
+    range = NumericProperty(None)
+    wall = BooleanProperty(None)
+    labText = StringProperty(None)
     def __init__(self, **kwargs):
         super(HexLab, self).__init__(**kwargs)
         self.hexCulu = kwargs.get('edgeCulu', Color(0.5, 0.5, 0.5))
         self.edgeCulu = kwargs.get('edgeCulu', Color(1, 1, 0.5))
         self.range = kwargs.get('range', 5)
         self.wall = kwargs.get('wall', False)
+        self.bind(labText=self.setter('text'))
 
 class Vertex(object):
     def __init__(self, *args, **kwargs):
@@ -249,8 +255,6 @@ class KivyHexagon(Hexagon):
 
 class HexagonRoot(FloatLayout):
 
-    #HexGrid = ObjectProperty()
-
     def __init__(self, **kwargs):
         super(HexagonRoot, self).__init__(**kwargs)
         #self.bind(pos=self.render_canvas, size=self.render_canvas)
@@ -263,7 +267,7 @@ class HexagonRoot(FloatLayout):
         self.CORNER_RADIUS = kwargs.get('cornerRadius', 4)
         #self.AXIS_COLOR = kwargs.get('axisColor', (0.3, 0.3, 0.3))
         self.ROWCOUNT = self.ROWS * self.COLS
-        self.coord_labels = [HexLab(text="", pos_hint={}, size_hint=(None, None)) for i in xrange(self.ROWCOUNT)]
+        self.coord_labels = [HexLab(text="s", pos_hint={}, size_hint=(None, None)) for i in xrange(self.ROWCOUNT)]
         self.cubeIndex = {}
         self.hexagon = KivyHexagon()
         self.hexagon.set_edge_len(self.EDGE_LEN)
@@ -282,7 +286,8 @@ class HexagonRoot(FloatLayout):
             if self.coord_labels[index].collide_point(*touch.pos):
                 if self.dragPlotA is None and touch.is_double_tap:
                     Logger.info('DoubleTap at ' + self.coord_labels[index].id)
-                    self.changeHexColor(index, hexCulu = Color(1, 0, 0.8), edgeCulu = Color(0, 0, 0), wall = True)
+                    lab = self.changeHexColor(index, hexCulu = Color(1, 0, 0.8), edgeCulu = Color(0, 0, 0))
+                    lab.wall = True
                 elif self.dragPath is True:
                     touch.grab(self.coord_labels[index])
                     Logger.info('Grab at ' + self.coord_labels[index].id)
@@ -334,7 +339,6 @@ class HexagonRoot(FloatLayout):
         self.centerish = (size[0] * 0.6, size[1] * 0.65)
         self.redrawTrigger()
 
-######LINE DRAWING
     def cube_linePlot(self, a, b):
 
         def _cube_distance(a, b):
@@ -418,42 +422,21 @@ class HexagonRoot(FloatLayout):
                     if neighbor not in visited and self.cubeID(neighbor) in self.cubeIndex and self.coord_labels[ self.cubeIndex[self.cubeID(neighbor)] ].wall is False:
                         visited.add(neighbor)
                         fringes[k].append(neighbor)
-        Logger.info('Path is - ' + str(visited))
         for cube in visited:
             lab = self.coord_labels[ self.cubeIndex[self.cubeID(cube)] ]
-            self.remove_widget(lab)
-            lab.color = [1, 0, 0, 1]
+            Logger.info('Cube ' + str(cube) + ' = ' + str(lab.id))
+            lab.color = [1, 0, 0, 0.5]
             lab.text = "HI"
-            self.add_widget(lab, 0)
 
         return visited
 
-######HEX Updating
-    def wallHex(self, index, **kwargs):
-        self.coord_labels[index].wall = True
-        self.changeHexColor(index, hexCulu = Color(1, 0, 1), edgeCulu = Color(0, 0, 0))
-
-    def resetCuluz(self, cubeList):
-        for cube in cubeList:
-            index = self.cubeIndex[(cube.x, cube.y, cube.z)]
-            lab = self.coord_labels[index]
-            Logger.info('ResetCuluz on ' + str(lab.id))
-            lab.group.add(lab.prevHexCol)
-            lab.group.add(self.hexagon.make_mesh(lab.each_position))
-
     def changeHexColor(self, index, **kwargs):
         lab = self.coord_labels[index]
-        if lab.wall is True and kwargs.get('wall', False) is True:
-            lab.hexCulu = lab.prevHexCol
-        else:
-            lab.prevHexCol = copy(lab.hexCulu)
-            lab.hexCulu = kwargs.get('hexCulu', lab.hexCulu)
-        lab.wall = kwargs.get('wall', False)
-        #lab.group.add(Callback(self.resetCuluz(self.dragPlotHitory)))
+        lab.prevHexCol = copy(lab.hexCulu)
+        lab.hexCulu = kwargs.get('hexCulu', lab.hexCulu)
         lab.group.add(lab.hexCulu)
         lab.group.add(self.hexagon.make_mesh(lab.each_position))
-#         lab.group = self._generateIG(lab)
-#         lab.canvas.add(lab.group)
+        return lab
 
     def drawLine(self, indexA, indexB):
         labA = self.coord_labels[indexA]
@@ -466,53 +449,51 @@ class HexagonRoot(FloatLayout):
             Logger.info('Plotting line at ' + str(lab.id) + ', Cube coords: x=' + str(cube.x) + ' y=' + str(cube.y) + ' z=' + str(cube.z))
             coors.append(lab.center[0])
             coors.append(lab.center[1])
-#             self.changeHexColor(self.cubeIndex[(cube.x, cube.y, cube.z)],
-#                             hexCulu = Color(0.2, 0.2, 0.2),
-#                             edgeCulu = Color(0 ,0 ,0))
         self.linePlot = InstructionGroup()
         self.linePlot.add(Color(1,1,1))
         self.linePlot.add(Line(points=coors, width=10))
         self.canvas.add(self.linePlot)
         return result[:labA.range]
 
-    def _generateIG(self, lab):
-        inG = InstructionGroup()
-        inG.add(lab.edgeCulu)
-        inG.add(self.hexagon.make_outline(lab.each_position))
-        inG.add(lab.hexCulu)
-        inG.add(self.hexagon.make_mesh(lab.each_position))
-        return inG
-
     def render_canvas(self, *args):
         origin_position = Position(*self.centerish)
         origin_position.x -= self.X_AXIS_LEN / 2
         origin_position.y += self.Y_AXIS_LEN / 2
-        for each_label in self.coord_labels:
-            self.remove_widget(each_label)
+        for lab in self.coord_labels:
+            self.remove_widget(lab)
 
         height = sqrt(3)/2 * (self.EDGE_LEN * 2)
         for col, row, each_position in self.hexagon.gen_grid_positions(origin_position, row_count=self.ROWS, col_count=self.COLS):
             index = row * self.COLS + col
             id = "{0}x{1}".format(col, row)
             Logger.info(str(index) + ' each_position = ' + str(each_position) + ', ID = ' + id)
-            each_label = self.coord_labels[index]
-            each_label.id = id
+            lab = self.coord_labels[index]
+            lab.id = id
             cubex = col - (row - (row&1)) / 2
             cubez = row
             cubey = -cubex - cubez
             self.cubeIndex[(cubex, cubey, cubez)] = index
-            each_label.width = self.EDGE_LEN
-            each_label.height = height
-            each_label.cube = Cube(cubex, cubey, cubez)
-            each_label.center = each_position.to_tuple()
-            each_label.col = NumericProperty(col)
-            each_label.row = NumericProperty(row)
-            each_label.each_position = copy(each_position)
-            each_label.group = self._generateIG(each_label)
-            each_label.collide_point_forhex = each_label.collide_point
+            lab.width = self.EDGE_LEN
+            lab.height = height
+            lab.color = (1,0,1,1)
+            lab.text_size = (self.EDGE_LEN, None)
+            lab.valign = 'middle'
+            lab.markup = True
+            lab.labText = id
+            lab.cube = Cube(cubex, cubey, cubez)
+            lab.center = each_position.to_tuple()
+            lab.col = NumericProperty(col)
+            lab.row = NumericProperty(row)
+            lab.each_position = copy(each_position)
+            lab.group = InstructionGroup()
+            lab.group.add(lab.edgeCulu)
+            lab.group.add(self.hexagon.make_outline(lab.each_position))
+            lab.group.add(lab.hexCulu)
+            lab.group.add(self.hexagon.make_mesh(lab.each_position))
+            lab.collide_point_forhex = lab.collide_point
 
-        for each_label in self.coord_labels:
-            self.remove_widget(each_label)
-            each_label.canvas.clear()
-            each_label.canvas.add(each_label.group)
-            self.add_widget(each_label)
+        for lab in self.coord_labels:
+            self.remove_widget(lab)
+            lab.canvas.clear()
+            lab.canvas.add(lab.group)
+            self.add_widget(lab)
