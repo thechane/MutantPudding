@@ -31,6 +31,13 @@ class Main_Screen(Screen):
         #self.HexGrid.changeHexColor(2, hexCulu = Color(1, 0, 1), edgeCulu = Color(0, 0, 0))
         self.ids['HexGrid'].cube_reachable(2, 4)
 
+    def Flash_Box(self, message):
+        Logger.info('Flash_Box FIRED')
+        self.flashText = message
+        if Configed_Bool("General", "sound") is True:
+            self.glitch_sound.play()
+        self.flashTrigger()
+
     def changePart(self):
         #self.HexGrid.hexagon.set_even_r()
         #self.HexGrid.render_canvas()
