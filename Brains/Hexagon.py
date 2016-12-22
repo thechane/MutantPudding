@@ -291,8 +291,8 @@ class HexagonRoot(FloatLayout):
     def _Flash_Box(self, dt):
         Logger.info('_Flash_Box FIRED')
         fL = Label(text = 'AHH', font_size = '18sp', size_hint = (None,None))
-        fL.pos = 10, 10
-        fL.color = (0,0,0,1)
+        fL.pos = 100, 100
+        fL.color = (1,1,1,1)
         self.Widget_ToTop(fL)
 
     def Flash_Box(self, message):
@@ -307,6 +307,7 @@ class HexagonRoot(FloatLayout):
                     Logger.info('DoubleTap at ' + self.coord_labels[index].id)
                     lab = self.changeHexColor(index, hexCulu = Color(1, 0, 0.8), edgeCulu = Color(0, 0, 0))
                     lab.wall = True
+                    Logger.info('coll -- ' + str(lab.collide_point_forhex))
                     self.Flash_Box('WALL')
                 elif self.dragPath is True:
                     touch.grab(self.coord_labels[index])
@@ -396,8 +397,8 @@ class HexagonRoot(FloatLayout):
 
     def cube_reachable(self, start, steps):
 
-        start = self.coord_labels[20].cube
-        steps = 2
+        #start = self.coord_labels[20].cube
+        #steps = 2
 
 #         def _cube_add (cubeA, cubeB):
 #             return Cube(cubeA.x + cubeB.x, cubeA.y + cubeB.y, cubeA.z + cubeB.z)
@@ -441,12 +442,6 @@ class HexagonRoot(FloatLayout):
                     if neighbor not in visited and self.cubeID(neighbor) in self.cubeIndex and self.coord_labels[ self.cubeIndex[self.cubeID(neighbor)] ].wall is False:
                         visited.add(neighbor)
                         fringes[k].append(neighbor)
-        for cube in visited:
-            lab = self.coord_labels[ self.cubeIndex[self.cubeID(cube)] ]
-            Logger.info('Cube ' + str(cube) + ' = ' + str(lab.id))
-            lab.color = [1, 0, 0, 0.5]
-            lab.text = "HI"
-
         return visited
 
     def changeHexColor(self, index, **kwargs):
@@ -457,6 +452,21 @@ class HexagonRoot(FloatLayout):
         lab.group.add(self.hexagon.make_mesh(lab.each_position))
         lab.group.add(lab.edgeCulu)
         return lab
+
+#     def cube_reachable(start, movement):
+#         visited = set()
+#         visited.add(start)
+#         fringes = []
+#         fringes.append([start])
+#         for k in range(1, movement):
+#             fringes.append([])
+#             for cube in fringes[k-1]:
+#                 for dir in range(0, 6):
+#                     neighbor = cube_neighbor(cube, dir)
+#                     if neighbor not in visited and neighbor not in self.blocked:
+#                         visited.add(neighbor)
+#                         fringes[k].append(neighbor)
+#         return visited
 
     def drawLine(self, indexA, indexB):
         labA = self.coord_labels[indexA]
@@ -472,6 +482,18 @@ class HexagonRoot(FloatLayout):
         self.linePlot = InstructionGroup()
         self.linePlot.add(Color(1,1,1))
         self.linePlot.add(Line(points=coors, width=10))
+
+        #begin attempt at blockage algorithm
+        newCoors = []
+        for cube in self.cube_reachable(labA.cube, labA.range):
+            lab = self.coord_labels[ self.cubeIndex[(cube.x,cube.y,cube.z)] ]
+            Logger.info('Plotting NEW line at ' + str(lab.id) + ', Cube coords: x=' + str(cube.x) + ' y=' + str(cube.y) + ' z=' + str(cube.z))
+            newCoors.append(lab.center[0])
+            newCoors.append(lab.center[1])
+        self.linePlot.add(Color(1,1,0))
+        self.linePlot.add(Line(points=newCoors, width=1))
+        #end
+
         self.canvas.add(self.linePlot)
         return result[:labA.range]
 

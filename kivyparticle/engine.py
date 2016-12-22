@@ -46,14 +46,14 @@ class Particle(object):
 
 
 class ParticleSystem(Widget):
-    max_num_particles = NumericProperty(200)
+    max_num_particles = NumericProperty(100)
     life_span = NumericProperty(2)
     texture = ObjectProperty(None)
     texture_path = StringProperty(None)
     life_span_variance = NumericProperty(0)
-    start_size = NumericProperty(16)
+    start_size = NumericProperty(8)
     start_size_variance = NumericProperty(0)
-    end_size = NumericProperty(16)
+    end_size = NumericProperty(8)
     end_size_variance = NumericProperty(0)
     emit_angle = NumericProperty(0)
     emit_angle_variance = NumericProperty(0)
