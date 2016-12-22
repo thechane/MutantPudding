@@ -310,8 +310,10 @@ class HexagonRoot(FloatLayout):
                     Logger.info('coll -- ' + str(lab.collide_point_forhex))
                     self.Flash_Box('WALL')
                 elif self.dragPath is True:
-                    touch.grab(self.coord_labels[index])
-                    Logger.info('Grab at ' + self.coord_labels[index].id)
+                    labA = self.coord_labels[index]
+                    touch.grab(labA)
+                    Logger.info('Grab at ' + labA.id)
+                    labA.allReachableCubes = self.cube_reachable(labA.cube, labA.range)
                     self.dragPlotA = index
                 return False
 
@@ -396,26 +398,6 @@ class HexagonRoot(FloatLayout):
         return (cube.x, cube.y, cube.z)
 
     def cube_reachable(self, start, steps):
-
-        #start = self.coord_labels[20].cube
-        #steps = 2
-
-#         def _cube_add (cubeA, cubeB):
-#             return Cube(cubeA.x + cubeB.x, cubeA.y + cubeB.y, cubeA.z + cubeB.z)
-#
-#         allReachableCubes = []
-#         for dx in range(-steps, steps):
-#             for dy in range(max(-steps, -dx-steps), min(steps, -dx+steps)):
-#                 dz = -dx-dy
-#                 allReachableCubes.append(_cube_add(start, Cube(dx, dy, dz)))
-#
-#         def _cube_neighbor(cube, dirIndex):
-#             directions = (
-#                Cube(+1, -1,  0), Cube(+1,  0, -1), Cube( 0, +1, -1),
-#                Cube(-1, +1,  0), Cube(-1,  0, +1), Cube( 0, -1, +1)
-#             )
-#             return _cube_add(cube, directions[dirIndex])
-
         def _cube_neighbor(cube, dirIndex):
             def _cube_add (cube, op):
                 return Cube(op[0](cube.x), op[1](cube.y), op[2](cube.z))
@@ -428,7 +410,6 @@ class HexagonRoot(FloatLayout):
                (lambda x:x+0, lambda x:x-1, lambda x:x+1)
             )
             return _cube_add(cube, directions[dirIndex])
-
         visited = set()
         visited.add(start)
         fringes = []
@@ -474,24 +455,27 @@ class HexagonRoot(FloatLayout):
         result = self.cube_linePlot(labA.cube, labB.cube)
         result.append(labB.cube)
         coors = []
+        noBlockage = True
         for cube in result[:labA.range]:
             lab = self.coord_labels[ self.cubeIndex[(cube.x,cube.y,cube.z)] ]
             Logger.info('Plotting line at ' + str(lab.id) + ', Cube coords: x=' + str(cube.x) + ' y=' + str(cube.y) + ' z=' + str(cube.z))
             coors.append(lab.center[0])
             coors.append(lab.center[1])
+            if cube not in labA.allReachableCubes:
+                noBlockage = False
         self.linePlot = InstructionGroup()
         self.linePlot.add(Color(1,1,1))
         self.linePlot.add(Line(points=coors, width=10))
 
         #begin attempt at blockage algorithm
-        newCoors = []
-        for cube in self.cube_reachable(labA.cube, labA.range):
-            lab = self.coord_labels[ self.cubeIndex[(cube.x,cube.y,cube.z)] ]
-            Logger.info('Plotting NEW line at ' + str(lab.id) + ', Cube coords: x=' + str(cube.x) + ' y=' + str(cube.y) + ' z=' + str(cube.z))
-            newCoors.append(lab.center[0])
-            newCoors.append(lab.center[1])
-        self.linePlot.add(Color(1,1,0))
-        self.linePlot.add(Line(points=newCoors, width=1))
+#        newCoors = []
+#         for cube in allReachableCubes:
+#             lab = self.coord_labels[ self.cubeIndex[(cube.x,cube.y,cube.z)] ]
+#             Logger.info('Plotting NEW line at ' + str(lab.id) + ', Cube coords: x=' + str(cube.x) + ' y=' + str(cube.y) + ' z=' + str(cube.z))
+#             newCoors.append(lab.center[0])
+#             newCoors.append(lab.center[1])
+        #self.linePlot.add(Color(1,1,0))
+        #self.linePlot.add(Line(points=newCoors, width=1))
         #end
 
         self.canvas.add(self.linePlot)
