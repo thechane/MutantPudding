@@ -1,6 +1,6 @@
 from kivy.uix.screenmanager import Screen
 from kivy.logger import Logger
-from Brains.Hexagon import HexagonRoot
+import Brains.HexagonRoot
 from Brains.Particle import Particle
 from kivyparticle import ParticleSystem
 from kivy.graphics import Color

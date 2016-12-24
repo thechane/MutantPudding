@@ -10,8 +10,26 @@ from kivy.logger import Logger
 from kivy.core.window import Window
 
 from math import pi, cos, sin, sqrt
-from docutils.nodes import row
-from copy import copy
+
+class Cube(object):
+    def __init__(self, x, y, z):
+        self.x = x
+        self.y = y
+        self.z = z
+        self.ID = (self.x, self.y, self.z)
+
+    def Neighbor(self, dirIndex):
+        def _cube_add (op):
+            return Cube(op[0](self.x), op[1](self.y), op[2](self.z))
+        directions = (
+           (lambda x:x+1, lambda x:x-1, lambda x:x+0),
+           (lambda x:x+1, lambda x:x+0, lambda x:x-1),
+           (lambda x:x+0, lambda x:x+1, lambda x:x-1),
+           (lambda x:x-1, lambda x:x+1, lambda x:x+0),
+           (lambda x:x-1, lambda x:x+0, lambda x:x+1),
+           (lambda x:x+0, lambda x:x-1, lambda x:x+1)
+        )
+        return _cube_add(directions[dirIndex])
 
 class Position(object):
     def __init__(self, *args, **kwargs):
@@ -31,24 +49,6 @@ class Position(object):
 
     def to_tuple(self):
         return (self.x, self.y)
-
-class Cube(object):
-    def __init__(self, x, y, z):
-        self.x = x
-        self.y = y
-        self.z = z
-
-class HexLab(Label):
-    hexCulu = Color(None)
-    edgeCulu = Color(None)
-    range = NumericProperty(None)
-    wall = BooleanProperty(None)
-    def __init__(self, **kwargs):
-        super(HexLab, self).__init__(**kwargs)
-        self.hexCulu = kwargs.get('edgeCulu', Color(0.5, 0.5, 0.5))
-        self.edgeCulu = kwargs.get('edgeCulu', Color(1, 1, 0.5))
-        self.range = kwargs.get('range', 5)
-        self.wall = kwargs.get('wall', False)
 
 class Vertex(object):
     def __init__(self, *args, **kwargs):
@@ -251,278 +251,3 @@ class KivyHexagon(Hexagon):
 
     def make_circle(self, center_position, radius):
         return Ellipse(pos=(center_position.x - radius, center_position.y - radius), size=(radius * 2, radius * 2))
-
-class HexagonRoot(FloatLayout):
-
-    flashText = StringProperty('')  # #Text for the flash boxes
-
-    def __init__(self, **kwargs):
-        super(HexagonRoot, self).__init__(**kwargs)
-        #self.bind(pos=self.render_canvas, size=self.render_canvas)
-        self.size_hint = (1, 1)
-        self.EDGE_LEN = kwargs.get('edgeLength', 1)
-        self.EDGE_WIDTH = kwargs.get('edgeWidth', 1)
-        self.ROWS =  kwargs.get('rows', 10)
-        self.COLS = kwargs.get('cols', self.ROWS)
-        self.CENTER_RADIUS = kwargs.get('centerRadius', 4)
-        self.CORNER_RADIUS = kwargs.get('cornerRadius', 4)
-        #self.AXIS_COLOR = kwargs.get('axisColor', (0.3, 0.3, 0.3))
-        self.ROWCOUNT = self.ROWS * self.COLS
-        self.coord_labels = [HexLab(text="s", pos_hint={}, size_hint=(None, None)) for i in xrange(self.ROWCOUNT)]
-        self.cubeIndex = {}
-        self.hexagon = KivyHexagon()
-        self.hexagon.set_edge_len(self.EDGE_LEN)
-        self.hexagon.set_dir(+1, -1)
-        self.X_AXIS_LEN = self.hexagon.get_short_len() * self.COLS
-        self.Y_AXIS_LEN = self.hexagon.get_long_step() * self.ROWS
-        self.centerish = (10,10)
-        self.redrawTrigger = Clock.create_trigger(self.render_canvas)
-        self.dragPath = kwargs.get('dragPath', True)
-        self.dragPlotA = None
-        self.dragPlotB = None
-        self.dragPlotHitory = []
-        self.flashTrigger = Clock.create_trigger(self._Flash_Box)
-
-    def Widget_ToTop(self, widget):
-        self.remove_widget(widget)
-        self.add_widget(widget)
-        return True
-
-    def _Flash_Box(self, dt):
-        Logger.info('_Flash_Box FIRED')
-        fL = Label(text = 'AHH', font_size = '18sp', size_hint = (None,None))
-        fL.pos = 100, 100
-        fL.color = (1,1,1,1)
-        self.Widget_ToTop(fL)
-
-    def Flash_Box(self, message):
-        Logger.info('Flash_Box FIRED')
-        self.flashText = message
-        self.flashTrigger()
-
-    def on_touch_down(self, touch):
-        for index in xrange(self.ROWCOUNT):
-            if self.coord_labels[index].collide_point(*touch.pos):
-                if self.dragPlotA is None and touch.is_double_tap:
-                    Logger.info('DoubleTap at ' + self.coord_labels[index].id)
-                    lab = self.changeHexColor(index, hexCulu = Color(1, 0, 0.8), edgeCulu = Color(0, 0, 0))
-                    lab.wall = True
-                    Logger.info('coll -- ' + str(lab.collide_point_forhex))
-                    self.Flash_Box('WALL')
-                elif self.dragPath is True:
-                    labA = self.coord_labels[index]
-                    touch.grab(labA)
-                    Logger.info('Grab at ' + labA.id)
-                    labA.allReachableCubes = self.cube_reachable(labA.cube, labA.range)
-                    self.dragPlotA = index
-                return False
-
-    def on_touch_move(self, touch):
-        for index in xrange(self.ROWCOUNT):
-            lab = self.coord_labels[index]
-            if self.dragPlotA is not None and self.dragPlotA != index and self.dragPlotB != index and lab.collide_point(*touch.pos):
-                Logger.info('Move at ' + lab.id)
-                self.dragPlotB = index
-                try:
-                    self.canvas.remove(self.linePlot)
-                except:
-                    Logger.error('AHHHHH ')
-                    pass
-                self.dragPlotHitory = self.drawLine(self.dragPlotA, self.dragPlotB)
-                return False
-
-    def on_touch_up(self, touch):
-        if self.dragPlotA is not None:
-            try:
-                self.canvas.remove(self.linePlot)
-            except:
-                pass
-        for index in xrange(self.ROWCOUNT):
-            if self.dragPlotA is not None and self.coord_labels[index].collide_point_forhex(*touch.pos):
-                touch.ungrab(self.coord_labels[index])
-                Logger.info('ungrab at ' + self.coord_labels[index].id + '    - ' + str(self.coord_labels[index].collide_point_forhex))
-                self.dragPlotA = None
-                self.dragPlotB = None
-                return False
-
-    def returnHexLab(self, index):
-        return self.coord_labels[index]
-
-    def returnHexLables(self):
-        return self.coord_labels
-
-    def on_size(self, screen, size):
-        height = size[1] / self.ROWS
-        width = sqrt(3)/2 * height
-        self.EDGE_LEN = (height / 2) * 1.18
-        Logger.info('on_size fired -- size = ' + str(size) + ', height = ' + str(height) + ', width = ' + str(width) + 'COLS = ' + str(self.COLS) + ', ROWS = ' + str(self.ROWS))
-        self.hexagon.set_edge_len(self.EDGE_LEN)
-        self.X_AXIS_LEN = self.hexagon.get_short_len() * self.COLS
-        self.Y_AXIS_LEN = self.hexagon.get_long_step() * self.ROWS
-        self.centerish = (size[0] * 0.6, size[1] * 0.65)
-        self.redrawTrigger()
-
-    def cube_linePlot(self, a, b):
-
-        def _cube_distance(a, b):
-            return (abs(a.x - b.x) + abs(a.y - b.y) + abs(a.z - b.z)) / 2
-
-        def _cube_lerp(a, b, t):
-            return Cube(_lerp(a.x, b.x, t), _lerp(a.y, b.y, t), _lerp(a.z, b.z, t))
-
-        def _lerp(a, b, t):
-            return a + (b - a) * t
-
-        def _cube_round(h):
-            rx = round(h.x)
-            ry = round(h.y)
-            rz = round(h.z)
-            x_diff = abs(rx - h.x)
-            y_diff = abs(ry - h.y)
-            z_diff = abs(rz - h.z)
-            if x_diff > y_diff and x_diff > z_diff:
-                rx = -ry-rz
-            elif y_diff > z_diff:
-                ry = -rx-rz
-            else:
-                rz = -rx-ry
-            return Cube(rx, ry, rz)
-
-        N = _cube_distance(a, b)
-        results = []
-        for i in range(0,N):
-            results.append(_cube_round(_cube_lerp(a, b, 1.0 / N * i)))
-        return results
-
-    def cubeID (self,cube):
-        return (cube.x, cube.y, cube.z)
-
-    def cube_reachable(self, start, steps):
-        def _cube_neighbor(cube, dirIndex):
-            def _cube_add (cube, op):
-                return Cube(op[0](cube.x), op[1](cube.y), op[2](cube.z))
-            directions = (
-               (lambda x:x+1, lambda x:x-1, lambda x:x+0),
-               (lambda x:x+1, lambda x:x+0, lambda x:x-1),
-               (lambda x:x+0, lambda x:x+1, lambda x:x-1),
-               (lambda x:x-1, lambda x:x+1, lambda x:x+0),
-               (lambda x:x-1, lambda x:x+0, lambda x:x+1),
-               (lambda x:x+0, lambda x:x-1, lambda x:x+1)
-            )
-            return _cube_add(cube, directions[dirIndex])
-        visited = set()
-        visited.add(start)
-        fringes = []
-        fringes.append([start])
-        for k in range(1, steps):
-            fringes.append([])
-            for cube in fringes[k-1]:
-                for dirIndex in range(0, 6):
-                    Logger.info('dir index = ' + str(dirIndex) + ', coor = ' + str(self.coord_labels[ self.cubeIndex[self.cubeID(cube)] ].id))
-                    neighbor = _cube_neighbor(cube, dirIndex)
-                    if neighbor not in visited and self.cubeID(neighbor) in self.cubeIndex and self.coord_labels[ self.cubeIndex[self.cubeID(neighbor)] ].wall is False:
-                        visited.add(neighbor)
-                        fringes[k].append(neighbor)
-        return visited
-
-    def changeHexColor(self, index, **kwargs):
-        lab = self.coord_labels[index]
-        lab.prevHexCol = copy(lab.hexCulu)
-        lab.hexCulu = kwargs.get('hexCulu', lab.hexCulu)
-        lab.group.add(lab.hexCulu)
-        lab.group.add(self.hexagon.make_mesh(lab.each_position))
-        lab.group.add(lab.edgeCulu)
-        return lab
-
-#     def cube_reachable(start, movement):
-#         visited = set()
-#         visited.add(start)
-#         fringes = []
-#         fringes.append([start])
-#         for k in range(1, movement):
-#             fringes.append([])
-#             for cube in fringes[k-1]:
-#                 for dir in range(0, 6):
-#                     neighbor = cube_neighbor(cube, dir)
-#                     if neighbor not in visited and neighbor not in self.blocked:
-#                         visited.add(neighbor)
-#                         fringes[k].append(neighbor)
-#         return visited
-
-    def drawLine(self, indexA, indexB):
-        labA = self.coord_labels[indexA]
-        labB = self.coord_labels[indexB]
-        result = self.cube_linePlot(labA.cube, labB.cube)
-        result.append(labB.cube)
-        coors = []
-        noBlockage = True
-        for cube in result[:labA.range]:
-            lab = self.coord_labels[ self.cubeIndex[(cube.x,cube.y,cube.z)] ]
-            Logger.info('Plotting line at ' + str(lab.id) + ', Cube coords: x=' + str(cube.x) + ' y=' + str(cube.y) + ' z=' + str(cube.z))
-            coors.append(lab.center[0])
-            coors.append(lab.center[1])
-            if cube not in labA.allReachableCubes:
-                noBlockage = False
-        self.linePlot = InstructionGroup()
-        self.linePlot.add(Color(1,1,1))
-        self.linePlot.add(Line(points=coors, width=10))
-
-        #begin attempt at blockage algorithm
-#        newCoors = []
-#         for cube in allReachableCubes:
-#             lab = self.coord_labels[ self.cubeIndex[(cube.x,cube.y,cube.z)] ]
-#             Logger.info('Plotting NEW line at ' + str(lab.id) + ', Cube coords: x=' + str(cube.x) + ' y=' + str(cube.y) + ' z=' + str(cube.z))
-#             newCoors.append(lab.center[0])
-#             newCoors.append(lab.center[1])
-        #self.linePlot.add(Color(1,1,0))
-        #self.linePlot.add(Line(points=newCoors, width=1))
-        #end
-
-        self.canvas.add(self.linePlot)
-        return result[:labA.range]
-
-    def render_canvas(self, *args):
-        origin_position = Position(*self.centerish)
-        origin_position.x -= self.X_AXIS_LEN / 2
-        origin_position.y += self.Y_AXIS_LEN / 2
-
-        for lab in self.coord_labels:
-            self.remove_widget(lab)
-
-        width = sqrt(3)/2 * (self.EDGE_LEN * 2)
-        for col, row, each_position in self.hexagon.gen_grid_positions(origin_position, row_count=self.ROWS, col_count=self.COLS):
-            index = row * self.COLS + col
-            id = "{0}x{1}".format(col, row)
-            Logger.info(str(index) + ' each_position = ' + str(each_position) + ', ID = ' + id)
-            lab = self.coord_labels[index]
-            lab.id = id
-            cubex = col - (row - (row&1)) / 2
-            cubez = row
-            cubey = -cubex - cubez
-            self.cubeIndex[(cubex, cubey, cubez)] = index
-            lab.width = width
-            lab.height = self.EDGE_LEN
-            lab.color = (1,0,1,1)
-            lab.font_size = '10sp'
-            lab.valign = 'middle'
-            lab.markup = True
-            lab.labText = id
-            lab.cube = Cube(cubex, cubey, cubez)
-            lab.center = each_position.to_tuple()
-            lab.col = NumericProperty(col)
-            lab.row = NumericProperty(row)
-            lab.each_position = copy(each_position)
-            lab.group = InstructionGroup()
-            lab.group.add(lab.edgeCulu)
-            lab.group.add(self.hexagon.make_outline(lab.each_position))
-            lab.group.add(lab.hexCulu)
-            lab.group.add(self.hexagon.make_mesh(lab.each_position))
-            lab.group.add(Color(1, 0, 0, 1))
-            lab.group.add(Rectangle(pos=lab.pos, size=lab.size))
-            lab.collide_point_forhex = lab.collide_point
-
-        for lab in self.coord_labels:
-            self.remove_widget(lab)
-            lab.canvas.clear()
-            lab.canvas.add(lab.group)
-            self.add_widget(lab)
