@@ -44,8 +44,9 @@ class HexGrid:
     def __init__(self, coord_labels, cubeIndex, reachableCubes):
         self.reachableCubes = reachableCubes
         self.weights = {}
-        for cube in reachableCubes:
-            self.weights[cube] = coord_labels[ cubeIndex[cube.ID] ].weight
+        for cubeID in reachableCubes:
+            self.weights[cubeID] = coord_labels[ cubeIndex[cubeID] ].weight
+        Logger.info('weight = (' + str(len(self.weights.keys())) + ') ' + str(self.weights))
 
     def neighbors(self, cube):
         results = []

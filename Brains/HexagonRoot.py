@@ -32,7 +32,7 @@ class HexagonRoot(FloatLayout):
         #self.AXIS_COLOR = kwargs.get('axisColor', (0.3, 0.3, 0.3))
         self.ROWCOUNT = self.ROWS * self.COLS
         tmpChar = Character(moveRange = 5, viewRange = 3, canFly = True)
-        self.coord_labels = [HexLab(character=tmpChar, text="s", pos_hint={}, size_hint=(None, None)) for i in xrange(self.ROWCOUNT)]
+        self.coord_labels = [HexLab(character=tmpChar, text="s", pos_hint={}, size_hint=(None, None), id=None) for i in xrange(self.ROWCOUNT)]
         self.cubeIndex = {}
         self.hexagon = KivyHexagon()
         self.hexagon.set_edge_len(self.EDGE_LEN)
@@ -76,8 +76,8 @@ class HexagonRoot(FloatLayout):
                 elif self.dragPath is True:
                     labA = self.coord_labels[index]
                     touch.grab(labA)
-                    Logger.info('Grab at ' + labA.id)
                     labA.allReachableCubes = self.cube_reachable(labA.cube, labA.character.moveRange)
+                    Logger.info('Grab at ' + labA.id + ', reachable count = ' + str(len(labA.allReachableCubes)))
                     labA.hexGrid = HexGrid(self.coord_labels, self.cubeIndex, labA.allReachableCubes)
                     self.dragPlotA = index
                 return False
@@ -159,35 +159,20 @@ class HexagonRoot(FloatLayout):
             results.append(_cube_round(_cube_lerp(a, b, 1.0 / N * i)))
         return results
 
-#     def cubeID (self,cube):
-#         return (cube.x, cube.y, cube.z)
-#
-#     def cube_neighbor(self, cube, dirIndex):
-#         def _cube_add (cube, op):
-#             return Cube(op[0](cube.x), op[1](cube.y), op[2](cube.z))
-#         directions = (
-#            (lambda x:x+1, lambda x:x-1, lambda x:x+0),
-#            (lambda x:x+1, lambda x:x+0, lambda x:x-1),
-#            (lambda x:x+0, lambda x:x+1, lambda x:x-1),
-#            (lambda x:x-1, lambda x:x+1, lambda x:x+0),
-#            (lambda x:x-1, lambda x:x+0, lambda x:x+1),
-#            (lambda x:x+0, lambda x:x-1, lambda x:x+1)
-#         )
-#         return _cube_add(cube, directions[dirIndex])
 
     def cube_reachable(self, start, steps):
         visited = set()
-        visited.add(start)
+        visited.add(start.ID)
         fringes = []
         fringes.append([start])
         for k in range(1, steps):
             fringes.append([])
             for cube in fringes[k-1]:
                 for dirIndex in range(0, 6):
-                    Logger.info('dir index = ' + str(dirIndex) + ', coor = ' + str(self.coord_labels[ self.cubeIndex[cube.ID] ].id))
+                    #Logger.info('dir index = ' + str(dirIndex) + ', coor = ' + str(self.coord_labels[ self.cubeIndex[cube.ID] ].id))
                     neighbor = cube.Neighbor(dirIndex)
-                    if neighbor not in visited and neighbor.ID in self.cubeIndex and self.coord_labels[ self.cubeIndex[neighbor.ID] ].wall is False:
-                        visited.add(neighbor)
+                    if neighbor.ID not in visited and neighbor.ID in self.cubeIndex and self.coord_labels[ self.cubeIndex[neighbor.ID] ].wall is False:
+                        visited.add(neighbor.ID)
                         fringes[k].append(neighbor)
         return visited
 
@@ -257,26 +242,26 @@ class HexagonRoot(FloatLayout):
         width = sqrt(3)/2 * (self.EDGE_LEN * 2)
         for col, row, each_position in self.hexagon.gen_grid_positions(origin_position, row_count=self.ROWS, col_count=self.COLS):
             index = row * self.COLS + col
-            id = "{0}x{1}".format(col, row)
-            Logger.info(str(index) + ' each_position = ' + str(each_position) + ', ID = ' + id)
             lab = self.coord_labels[index]
-            lab.id = id                                 #set ID
-            cubex = col - (row - (row&1)) / 2           #get the
-            cubez = row                                 #cube
-            cubey = -cubex - cubez                      #coordinates
-            self.cubeIndex[(cubex, cubey, cubez)] = index   #and use then to create an index
+            if lab.id is None:
+                id = "{0}x{1}".format(col, row)
+                Logger.info(str(index) + ' each_position = ' + str(each_position) + ', ID = ' + id)
+                lab.id = id                                     #set ID
+                cubex = col - (row - (row&1)) / 2               #get the
+                cubez = row                                       #cube
+                cubey = -cubex - cubez                          #coordinates
+                self.cubeIndex[(cubex, cubey, cubez)] = index   #and use then to create an index
+                lab.cube = Cube(cubex, cubey, cubez)            #this can be later referenxed against the cubeIndex
+                lab.col = NumericProperty(col)
+                lab.row = NumericProperty(row)
+            lab.each_position = copy(each_position)
             lab.width = width                           #set the calculated width
             lab.height = self.EDGE_LEN                  #and height which = EDGE_LEN - note, size is a square within each hex not whole hex
             lab.color = (1,0,1,1)                       #
             lab.font_size = '10sp'
             lab.valign = 'middle'
             lab.markup = True
-            lab.labText = id
-            lab.cube = Cube(cubex, cubey, cubez)        #this can be later referenxed against the cubeIndex
             lab.center = each_position.to_tuple()
-            lab.col = NumericProperty(col)
-            lab.row = NumericProperty(row)
-            lab.each_position = copy(each_position)
             lab.group = InstructionGroup()                                  #create Instruction group
             lab.group.add(lab.edgeCulu)                                     #so we can draw
             lab.group.add(self.hexagon.make_outline(lab.each_position))     #each hex
@@ -291,6 +276,8 @@ class HexagonRoot(FloatLayout):
             lab.canvas.clear()
             lab.canvas.add(lab.group)
             self.add_widget(lab)
+        Logger.info('coord_labels length = ' + str(len(self.coord_labels)))
+        Logger.info('cubeIndex length = ' + str(len(self.cubeIndex)))
 
 
 
